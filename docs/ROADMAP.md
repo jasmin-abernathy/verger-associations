@@ -1,6 +1,6 @@
 # Feuille de route
 
-## Avancement global initial : 15 %
+## Avancement global initial : 32 %
 
 Ce pourcentage mesure la progression vers un premier pilote utilisable, pas la maturité d’un produit commercial.
 
@@ -12,16 +12,19 @@ Ce pourcentage mesure la progression vers un premier pilote utilisable, pas la m
   - pilote envisagé.
 
 - [ ] **15–30 % — Validation du besoin**
-  - interroger les fondateurs d’Aldebaran ;
-  - tester Delta Chat sans développement ;
-  - examiner les mini-apps Webxdc existantes ;
-  - choisir la licence du projet.
+  - [ ] interroger les fondateurs d’Aldebaran ;
+  - [ ] tester Delta Chat sans développement ;
+  - [x] examiner le format et les API Webxdc ;
+  - [ ] comparer les mini-apps existantes ;
+  - [ ] choisir la licence du projet.
 
 - [ ] **30–55 % — Prototype**
-  - définir le parcours « Réunions et décisions » ;
-  - créer le premier fichier `.xdc` ;
-  - tester plusieurs participants et appareils ;
-  - prévoir un export local.
+  - [x] définir un premier parcours « Réunions et décisions » ;
+  - [x] créer les sources HTML, CSS et JavaScript ;
+  - [x] produire un premier fichier `.xdc` ;
+  - [ ] tester plusieurs participants et appareils réels ;
+  - [x] prévoir des exports Markdown et JSON ;
+  - [ ] tester les modifications concurrentes.
 
 - [ ] **55–75 % — Pilote Aldebaran**
   - installer le groupe ;

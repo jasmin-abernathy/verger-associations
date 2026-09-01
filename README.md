@@ -2,7 +2,7 @@
 
 Suite libre, sobre et *local-first* d’outils numériques destinés aux associations, collectifs, SCOP et SCIC.
 
-> **Statut : cadrage initial.** Le dépôt documente l’architecture et les usages déjà établis. Aucun logiciel n’est encore présenté comme fonctionnel.
+> **Statut : premier prototype technique.** Le dépôt contient le cadrage du projet et une mini-application Webxdc « Réunions et décisions ». Elle est exécutable, mais pas encore validée en conditions réelles ni présentée comme un produit stable.
 
 ## Positionnement
 
@@ -15,9 +15,27 @@ L’objectif n’est pas de recréer une messagerie, un annuaire d’adhérents 
 
 - **Hitobito ou un back-office associatif** : source officielle pour les membres, rôles, cotisations et données durables.
 - **Chatmail / Delta Chat** : conversations, groupes, canaux, fichiers, invitations et notifications.
-- **Webxdc** : mini-applications collaboratives fonctionnant dans les discussions, sans compte supplémentaire et sans serveur applicatif permanent.
+- **Webxdc** : mini-applications collaboratives fonctionnant dans les discussions, sans compte supplémentaire ni serveur applicatif permanent.
 - **Robots Chatmail** : rappels, alertes et synchronisations avec Hitobito ou d’autres services.
 - **Site public** : présentation, dons, formulaires externes et informations accessibles sans messagerie.
+
+## Prototype disponible
+
+Le code du premier module se trouve dans [`apps/reunions-decisions`](apps/reunions-decisions/README.md).
+
+Il permet déjà de :
+
+- nommer et dater une réunion ;
+- construire un ordre du jour partagé ;
+- ajouter des propositions et faire évoluer leur statut ;
+- attribuer des actions et des échéances ;
+- partager un relevé Markdown ou un export JSON dans une conversation.
+
+Le paquet prêt à envoyer dans Delta Chat est généré dans `dist/reunions-decisions.xdc` avec :
+
+```bash
+./scripts/build-xdc.sh
+```
 
 ## Premiers modules envisagés
 
@@ -38,8 +56,8 @@ L’association **Aldebaran**, avec ses 4 à 7 fondateurs, constitue le terrain 
 
 - un groupe Delta Chat ;
 - un canal d’annonces ;
-- une première mini-application « Réunions et décisions » ;
-- un robot de rappels relié à Hitobito ;
+- la mini-application « Réunions et décisions » ;
+- à terme, un robot de rappels relié à Hitobito ;
 - des tests Android et ordinateur.
 
 ## Principes
@@ -56,20 +74,27 @@ L’association **Aldebaran**, avec ses 4 à 7 fondateurs, constitue le terrain 
 
 ## Limites connues
 
+- Chatmail n’est pas un *backend* applicatif classique : il transporte les messages et les mises à jour Webxdc via Delta Chat.
 - Webxdc n’accède pas directement à Internet : les intégrations externes passent par un robot ou un lien explicitement ouvert.
 - Les données juridiques, comptables et administratives ne doivent pas reposer uniquement sur les conversations.
 - Chatmail est un transport éphémère, pas un archivage documentaire permanent.
 - L’adoption de Delta Chat par les membres doit être validée en situation réelle.
-- Le choix de licence doit être arrêté avant la première publication de code.
+- Le choix de licence doit être arrêté avant toute ouverture du dépôt ou acceptation de contributions externes.
 
 ## Documentation
 
 - [Vision et périmètre](docs/VISION.md)
 - [Architecture](docs/ARCHITECTURE.md)
+- [Chatmail, Delta Chat et Webxdc](docs/CHATMAIL.md)
+- [Cas d’usage](docs/USE-CASES.md)
+- [Périmètre du MVP](docs/MVP.md)
+- [Modèle de données](docs/DATA-MODEL.md)
 - [Modules](docs/MODULES.md)
 - [Pilote Aldebaran](docs/PILOT-ALDEBARAN.md)
 - [Feuille de route](docs/ROADMAP.md)
+- [Questions ouvertes](docs/OPEN-QUESTIONS.md)
 - [Sécurité et vie privée](docs/SECURITY-PRIVACY.md)
+- [Journal des décisions](docs/DECISIONS.md)
 - [Contribuer](CONTRIBUTING.md)
 
 ## Références techniques

@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>Réunions et décisions</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="webxdc.js"></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Aller au contenu</a>
+
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">Verger Associations · prototype 0.1</p>
+        <h1>Réunions et décisions</h1>
+        <p id="connection-status" class="status" role="status">Chargement de l’état partagé…</p>
+      </div>
+    </header>
+
+    <main id="main" class="layout">
+      <section class="panel" aria-labelledby="meeting-title">
+        <h2 id="meeting-title">La réunion</h2>
+        <form id="meeting-form" class="form-grid">
+          <label>
+            Titre
+            <input id="meeting-name" name="meeting-name" autocomplete="off" required>
+          </label>
+          <label>
+            Date
+            <input id="meeting-date" name="meeting-date" type="date">
+          </label>
+          <button type="submit">Enregistrer</button>
+        </form>
+      </section>
+
+      <section class="panel" aria-labelledby="agenda-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Préparer</p>
+            <h2 id="agenda-title">Ordre du jour</h2>
+          </div>
+          <span id="agenda-count" class="count" aria-live="polite"></span>
+        </div>
+        <form id="agenda-form" class="inline-form">
+          <label class="sr-only" for="agenda-text">Nouveau point</label>
+          <input id="agenda-text" placeholder="Ajouter un point" autocomplete="off" required>
+          <button type="submit">Ajouter</button>
+        </form>
+        <ul id="agenda-list" class="item-list" aria-live="polite"></ul>
+      </section>
+
+      <section class="panel" aria-labelledby="proposals-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Délibérer</p>
+            <h2 id="proposals-title">Propositions</h2>
+          </div>
+          <span id="proposal-count" class="count" aria-live="polite"></span>
+        </div>
+        <form id="proposal-form" class="stacked-form">
+          <label>
+            Proposition
+            <input id="proposal-title" autocomplete="off" required>
+          </label>
+          <label>
+            Contexte ou formulation complète
+            <textarea id="proposal-details" rows="3"></textarea>
+          </label>
+          <button type="submit">Ajouter la proposition</button>
+        </form>
+        <div id="proposal-list" class="card-list" aria-live="polite"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="actions-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Faire</p>
+            <h2 id="actions-title">Actions</h2>
+          </div>
+          <span id="action-count" class="count" aria-live="polite"></span>
+        </div>
+        <form id="action-form" class="form-grid">
+          <label class="wide">
+            Action
+            <input id="action-text" autocomplete="off" required>
+          </label>
+          <label>
+            Responsable
+            <input id="action-owner" autocomplete="off">
+          </label>
+          <label>
+            Échéance
+            <input id="action-due" type="date">
+          </label>
+          <button type="submit">Ajouter l’action</button>
+        </form>
+        <ul id="action-list" class="item-list" aria-live="polite"></ul>
+      </section>
+
+      <section class="panel export-panel" aria-labelledby="export-title">
+        <div>
+          <p class="eyebrow">Conserver</p>
+          <h2 id="export-title">Partager un relevé</h2>
+          <p>Le relevé de travail doit ensuite être validé et archivé dans l’espace officiel de l’association.</p>
+        </div>
+        <div class="button-row">
+          <button id="export-markdown" type="button">Partager le relevé (.md)</button>
+          <button id="export-json" class="secondary" type="button">Partager les données (.json)</button>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>Aucune requête Internet, publicité ou télémétrie. Les changements sont transportés par la conversation.</p>
+    </footer>
+  </body>
+</html>

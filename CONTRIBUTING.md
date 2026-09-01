@@ -1,6 +1,6 @@
 # Contribuer
 
-Le projet est actuellement en phase de cadrage. Les contributions les plus utiles portent sur les besoins, les scénarios d’usage, l’accessibilité, la sécurité et l’examen des outils Webxdc existants.
+Le projet est actuellement en phase de prototype privé. Les contributions les plus utiles portent sur les besoins, les scénarios d’usage, l’accessibilité, la sécurité et les tests multi-appareils.
 
 ## Principes
 
@@ -23,8 +23,16 @@ Le projet est actuellement en phase de cadrage. Les contributions les plus utile
 
 ## Code
 
-Aucun socle technique applicatif n’est encore figé. Ne pas introduire de framework lourd avant le premier prototype.
+Le premier socle est une mini-app Webxdc sans framework ni dépendance distante. Un ajout doit rester utilisable hors ligne et ne pas introduire de requête réseau.
+
+Les changements doivent au minimum vérifier :
+
+- la syntaxe JavaScript ;
+- la construction du fichier `.xdc` ;
+- l’ouverture dans un navigateur avec le simulateur local ;
+- le rejeu des mises à jour sans duplication ;
+- la navigation au clavier et le zoom à 200 %.
 
 ## Licence
 
-Le choix de licence est encore ouvert. Les contributions de code ne seront acceptées qu’après décision explicite sur la licence.
+Le choix de licence est encore ouvert. Le dépôt reste privé et aucune contribution externe de code ne sera acceptée avant une décision explicite.
