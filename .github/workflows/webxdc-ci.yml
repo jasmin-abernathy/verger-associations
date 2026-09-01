@@ -1,0 +1,27 @@
+name: Webxdc CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/**"
+      - "scripts/build-xdc.sh"
+      - ".github/workflows/webxdc-ci.yml"
+  pull_request:
+    paths:
+      - "apps/**"
+      - "scripts/build-xdc.sh"
+      - ".github/workflows/webxdc-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    uses: jasmin-abernathy/app-build-factory/.github/workflows/webxdc-build.yml@main
+    with:
+      app_directory: "apps/reunions-decisions"
+      package_name: "reunions-decisions"
+      artifact_name: "reunions-decisions-xdc"
+      retention_days: 7
