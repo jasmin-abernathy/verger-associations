@@ -6,61 +6,47 @@
 - distinguer état de travail et archive officielle ;
 - utiliser des identifiants stables ;
 - rendre les opérations rejouables sans doublon ;
-- prévoir l’export dans un format ouvert ;
-- éviter de copier les données de membres déjà présentes dans Hitobito.
+- prévoir un export dans des formats ouverts ;
+- éviter de copier les données de membres déjà présentes dans Hitobito ;
+- archiver logiquement au lieu d’effacer silencieusement.
 
-## Entités du MVP
+## Entités du pilote
 
 ### Réunion
 
-| Champ | Type | Exemple |
-|---|---|---|
-| `id` | chaîne stable | `main` |
-| `title` | texte | `Conseil du 15 septembre` |
-| `date` | date ISO | `2026-09-15` |
+`title`, `date`, `facilitator`, `secretary` et `archiveReference` décrivent la réunion et le lien humainement lisible vers sa future archive officielle.
 
 ### Point d’ordre du jour
 
-| Champ | Type | Description |
-|---|---|---|
-| `id` | chaîne unique | Créée localement |
-| `text` | texte | Sujet à traiter |
-| `done` | booléen | Point traité ou non |
-| `createdAt` | date ISO | Tri stable |
+`text`, `done`, `archived`, `createdAt`, `updatedAt` et `updatedBy` décrivent un sujet à traiter.
 
 ### Proposition
 
-| Champ | Type | Description |
-|---|---|---|
-| `id` | chaîne unique | Identifiant de la proposition |
-| `title` | texte | Formulation courte |
-| `details` | texte | Contexte ou proposition complète |
-| `status` | énumération | `draft`, `discussion`, `objection`, `accepted`, `rejected` |
-| `createdAt` | date ISO | Tri stable |
+`title`, `details`, `status`, `decisionText`, `reviewDate`, `archived`, `createdAt`, `updatedAt` et `updatedBy` décrivent la délibération et son résultat.
+
+Les statuts admis sont `draft`, `clarification`, `discussion`, `objection`, `amendment`, `accepted` et `rejected`.
+
+### Contribution
+
+`proposalId`, `type`, `text`, `author`, `resolved`, `archived`, `createdAt`, `updatedAt` et `updatedBy` rattachent une clarification, réaction, objection ou proposition d’amendement à une proposition.
 
 ### Action
 
-| Champ | Type | Description |
-|---|---|---|
-| `id` | chaîne unique | Identifiant de l’action |
-| `text` | texte | Résultat attendu |
-| `owner` | texte | Responsable saisi explicitement |
-| `due` | date ISO ou vide | Échéance |
-| `done` | booléen | État d’avancement |
-| `createdAt` | date ISO | Tri stable |
+`proposalId`, `text`, `owner`, `due`, `done`, `archived`, `createdAt`, `updatedAt` et `updatedBy` décrivent une suite concrète. Le lien à une proposition est facultatif.
 
 ## Enveloppe de mise à jour Webxdc
 
-Le prototype échange une opération de la forme :
-
 ```json
 {
-  "version": 1,
+  "version": 2,
   "type": "patch",
-  "collection": "actions",
+  "collection": "contributions",
   "id": "identifiant-stable",
   "fields": {
-    "done": true
+    "proposalId": "proposal-123",
+    "type": "objection",
+    "text": "Prévoir une rotation",
+    "resolved": false
   },
   "stamp": {
     "counter": 12,
@@ -69,9 +55,13 @@ Le prototype échange une opération de la forme :
 }
 ```
 
-Chaque champ conserve la dernière estampille logique connue. Deux opérations reçues dans un ordre différent convergent vers la même valeur : le compteur le plus élevé gagne, puis l’identifiant de l’acteur départage une égalité.
+Chaque champ conserve la dernière estampille logique connue. Le compteur le plus élevé gagne, puis l’identifiant de l’acteur départage une égalité. Les opérations 0.1 de version `1` restent acceptées.
 
-Cette stratégie convient à un prototype et à de petits objets indépendants. Elle ne résout pas toutes les intentions concurrentes : deux personnes modifiant simultanément le même texte peuvent écraser la modification de l’autre. Ce cas doit être observé pendant le pilote.
+Les collections, champs, types et tailles de texte sont validés avant application. Les identifiants susceptibles de modifier le prototype JavaScript sont refusés.
+
+## Convergence et limites
+
+Une mise à jour rejouée ne crée pas de doublon. Deux séries d’opérations reçues dans un ordre différent convergent vers la même valeur. Deux personnes modifiant simultanément le même champ peuvent cependant écraser l’intention de l’autre : ce cas doit être observé pendant le pilote.
 
 ## Répartition de la conservation
 
@@ -81,16 +71,9 @@ Cette stratégie convient à un prototype et à de petits objets indépendants. 
 | Proposition en discussion | Webxdc | Export si utile |
 | Décision adoptée | Webxdc puis export | Stockage documentaire officiel |
 | Action de suivi | Webxdc | Back-office si suivi long |
-| Membres et rôles | Hitobito | Hitobito |
-| Cotisations | Hitobito / outil comptable | Système officiel |
+| Membres, rôles et cotisations | Hitobito | Hitobito |
 | Procès-verbal signé | Jamais uniquement Webxdc | Stockage documentaire officiel |
 
-## Évolutions prévues
+## Export JSON
 
-- version explicite du schéma d’export ;
-- auteur d’une opération affiché avec prudence ;
-- méthode de décision choisie par proposition ;
-- objections structurées ;
-- date de révision ;
-- lien vers l’archive officielle ;
-- protocole de migration d’une version de schéma à l’autre.
+L’export `schemaVersion: 2` contient les cinq collections. Les éléments archivés y restent présents afin de préserver la réversibilité ; ils sont masqués dans le relevé Markdown courant.
