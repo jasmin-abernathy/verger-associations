@@ -1,4 +1,5 @@
 name: Webxdc CI
+# Relance technique du 2 septembre 2026 pour valider la fabrique privée.
 
 on:
   push:
