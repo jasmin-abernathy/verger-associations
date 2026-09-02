@@ -4,40 +4,46 @@
 
 Valider qu’un petit groupe associatif peut préparer une réunion, structurer ses propositions, enregistrer ses décisions et répartir les suites sans créer de compte supplémentaire ni installer un outil métier séparé.
 
-## Version 0.1 — prototype technique
+## Version 0.2 — pilote testable
 
-La première version doit permettre de :
+La version permet de :
 
-- nommer et dater une réunion ;
-- ajouter des points à l’ordre du jour ;
-- cocher les points traités ;
-- créer une proposition avec un contexte court ;
-- faire passer une proposition par les états `brouillon`, `discussion`, `objection`, `adoptée` ou `rejetée` ;
-- créer une action, un responsable et une échéance ;
-- marquer une action comme terminée ;
-- partager un relevé Markdown ;
-- partager les données structurées en JSON.
+- nommer, dater et attribuer les rôles pratiques d’une réunion ;
+- construire un ordre du jour et cocher les points traités ;
+- créer et modifier une proposition ;
+- suivre les étapes `brouillon`, `clarification`, `discussion`, `objection`, `amendement`, `adoptée` ou `rejetée` ;
+- rattacher des clarifications, réactions, objections et amendements à chaque proposition ;
+- marquer une contribution comme traitée ;
+- conserver la formulation exacte d’une décision et sa date de révision ;
+- créer une action, un responsable, une échéance et un lien vers la proposition concernée ;
+- archiver et restaurer les éléments sans les effacer de l’historique ;
+- partager un relevé Markdown et des données JSON versionnées.
+
+Le module reste neutre sur la méthode de décision. L’adoption d’une proposition demeure un acte humain du groupe.
 
 ## Parcours principal
 
 1. Une personne partage le fichier `.xdc` dans le groupe.
-2. Elle nomme la réunion et ajoute une date.
+2. Elle nomme la réunion, ajoute la date et les rôles utiles.
 3. Les participants construisent l’ordre du jour.
-4. Ils ajoutent et qualifient les propositions.
-5. Ils enregistrent les actions décidées.
-6. Une personne génère le relevé.
-7. Le relevé validé est transféré vers le stockage officiel de l’association.
+4. Ils formulent une proposition et ajoutent leurs contributions.
+5. Ils traitent les objections et amendements.
+6. Ils enregistrent la formulation exacte de la décision.
+7. Ils attribuent les actions et échéances.
+8. Une personne partage le relevé validé vers le stockage officiel de l’association.
 
-## Critères d’acceptation du prototype
+## Critères d’acceptation technique
 
 - l’application s’ouvre dans Delta Chat sur Android et ordinateur ;
 - deux participants voient les mises à jour de l’autre ;
 - une mise à jour rejouée ne crée pas de doublon ;
+- des opérations concurrentes reçues dans des ordres différents convergent ;
 - le contenu reste lisible à 200 % de zoom ;
 - toutes les actions importantes sont accessibles au clavier ;
-- aucune dépendance externe ni requête réseau n’est nécessaire ;
-- l’export contient la date, l’ordre du jour, les propositions et les actions ;
-- une perte de réseau n’empêche pas de consulter l’état déjà reçu.
+- aucune dépendance externe, télémétrie ou requête réseau n’est nécessaire ;
+- l’export contient le cycle complet de décision et les actions ;
+- l’état déjà reçu reste consultable hors connexion ;
+- les tests automatisés du modèle et du paquet réussissent.
 
 ## Critères du pilote Aldebaran
 
@@ -48,10 +54,9 @@ La première version doit permettre de :
 - les participants savent où se trouve la version officielle du relevé ;
 - une majorité souhaite continuer l’essai.
 
-## Hors périmètre de la version 0.1
+## Hors périmètre
 
-- vote secret ;
-- garantie d’anonymat ;
+- vote secret et garantie d’anonymat ;
 - signature électronique ;
 - édition riche du procès-verbal ;
 - synchronisation Hitobito ;
@@ -59,15 +64,6 @@ La première version doit permettre de :
 - plusieurs réunions archivées dans la même instance ;
 - gestion complète des droits ;
 - méthode de gouvernance imposée.
-
-## Risques à tester
-
-- changements concurrents sur le même champ ;
-- compréhension des statuts d’une proposition ;
-- confusion entre relevé de travail et procès-verbal officiel ;
-- difficulté à retrouver la mini-app dans une conversation active ;
-- volume des mises à jour et durée de conservation ;
-- accessibilité réelle des contrôles dans les clients Delta Chat.
 
 ## Définition de « terminé »
 
