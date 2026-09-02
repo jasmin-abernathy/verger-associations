@@ -1,17 +1,18 @@
 name: Webxdc CI
-# Relance technique du 2 septembre 2026 pour valider la fabrique privée.
 
 on:
   push:
     branches: [main]
     paths:
       - "apps/**"
-      - "scripts/build-xdc.sh"
+      - "tests/**"
+      - "scripts/**"
       - ".github/workflows/webxdc-ci.yml"
   pull_request:
     paths:
       - "apps/**"
-      - "scripts/build-xdc.sh"
+      - "tests/**"
+      - "scripts/**"
       - ".github/workflows/webxdc-ci.yml"
   workflow_dispatch:
 
@@ -19,7 +20,17 @@ permissions:
   contents: read
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Récupérer les sources
+        uses: actions/checkout@v6
+      - name: Tester le modèle et la syntaxe
+        run: sh scripts/test.sh
+
   build:
+    needs: test
     uses: jasmin-abernathy/app-build-factory/.github/workflows/webxdc-build.yml@main
     with:
       app_directory: "apps/reunions-decisions"

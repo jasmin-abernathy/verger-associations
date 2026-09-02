@@ -2,7 +2,7 @@
 
 Suite libre, sobre et *local-first* d’outils numériques destinés aux associations, collectifs, SCOP et SCIC.
 
-> **Statut : premier prototype technique.** Le dépôt contient le cadrage du projet et une mini-application Webxdc « Réunions et décisions ». Elle est exécutable, mais pas encore validée en conditions réelles ni présentée comme un produit stable.
+> **Statut : version pilote 0.2.** La mini-application Webxdc « Réunions et décisions » couvre désormais le cycle de délibération complet et dispose de tests automatisés. Elle doit encore être validée à plusieurs sur des appareils réels avant d’être présentée comme stable.
 
 ## Positionnement
 
@@ -23,13 +23,14 @@ L’objectif n’est pas de recréer une messagerie, un annuaire d’adhérents 
 
 Le code du premier module se trouve dans [`apps/reunions-decisions`](apps/reunions-decisions/README.md).
 
-Il permet déjà de :
+La version pilote permet de :
 
-- nommer et dater une réunion ;
-- construire un ordre du jour partagé ;
-- ajouter des propositions et faire évoluer leur statut ;
-- attribuer des actions et des échéances ;
-- partager un relevé Markdown ou un export JSON dans une conversation.
+- préparer la réunion et son ordre du jour ;
+- faire progresser une proposition de la clarification à la décision ;
+- consigner réactions, objections et amendements, puis leur traitement ;
+- enregistrer la formulation retenue et une date de révision ;
+- attribuer des actions liées aux propositions ;
+- archiver sans effacer, puis exporter le relevé en Markdown ou JSON.
 
 Le paquet prêt à envoyer dans Delta Chat est généré dans `dist/reunions-decisions.xdc` avec :
 

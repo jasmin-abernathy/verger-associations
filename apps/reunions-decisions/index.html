@@ -4,39 +4,79 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#315f3a">
     <title>Réunions et décisions</title>
     <link rel="stylesheet" href="styles.css">
     <script src="webxdc.js"></script>
+    <script src="model.js"></script>
     <script src="app.js" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Aller au contenu</a>
 
     <header class="app-header">
-      <div>
-        <p class="eyebrow">Verger Associations · prototype 0.1</p>
-        <h1>Réunions et décisions</h1>
-        <p id="connection-status" class="status" role="status">Chargement de l’état partagé…</p>
+      <div class="brand-row">
+        <div>
+          <p class="eyebrow">Le Verger du Numérique · version pilote 0.2</p>
+          <h1>Réunions et décisions</h1>
+          <p id="connection-status" class="status" role="status" aria-live="polite">Chargement de l’état partagé…</p>
+        </div>
+        <div class="progress-card" aria-labelledby="progress-label">
+          <strong id="progress-label">0/5 étapes préparées</strong>
+          <progress id="meeting-progress" value="0" max="5">0 sur 5</progress>
+        </div>
       </div>
+
+      <nav class="step-nav" aria-label="Étapes de la réunion">
+        <a data-step href="#meeting"><span>1</span> Réunion</a>
+        <a data-step href="#agenda"><span>2</span> Ordre du jour</a>
+        <a data-step href="#proposals"><span>3</span> Propositions</a>
+        <a data-step href="#actions"><span>4</span> Actions</a>
+        <a data-step href="#export"><span>5</span> Relevé</a>
+      </nav>
     </header>
 
     <main id="main" class="layout">
-      <section class="panel" aria-labelledby="meeting-title">
-        <h2 id="meeting-title">La réunion</h2>
+      <section class="summary-grid" aria-label="Résumé de la réunion">
+        <div><strong id="decision-total">0</strong><span>Décisions adoptées</span></div>
+        <div><strong id="objection-total">0</strong><span>Objections ouvertes</span></div>
+        <div><strong id="action-total">0</strong><span>Actions à faire</span></div>
+      </section>
+
+      <section id="meeting" class="panel" aria-labelledby="meeting-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Cadrer</p>
+            <h2 id="meeting-title">La réunion</h2>
+          </div>
+          <span class="step-number" aria-hidden="true">1</span>
+        </div>
         <form id="meeting-form" class="form-grid">
-          <label>
+          <label class="wide">
             Titre
-            <input id="meeting-name" name="meeting-name" autocomplete="off" required>
+            <input id="meeting-name" name="meeting-name" maxlength="180" autocomplete="off" required>
           </label>
           <label>
             Date
             <input id="meeting-date" name="meeting-date" type="date">
           </label>
-          <button type="submit">Enregistrer</button>
+          <label>
+            Animation (facultatif)
+            <input id="meeting-facilitator" maxlength="120" autocomplete="off">
+          </label>
+          <label>
+            Prise de notes (facultatif)
+            <input id="meeting-secretary" maxlength="120" autocomplete="off">
+          </label>
+          <label>
+            Référence de l’archive officielle
+            <input id="archive-reference" maxlength="300" autocomplete="off" placeholder="À compléter après validation">
+          </label>
+          <button type="submit">Enregistrer la réunion</button>
         </form>
       </section>
 
-      <section class="panel" aria-labelledby="agenda-title">
+      <section id="agenda" class="panel" aria-labelledby="agenda-title">
         <div class="section-heading">
           <div>
             <p class="eyebrow">Préparer</p>
@@ -44,15 +84,16 @@
           </div>
           <span id="agenda-count" class="count" aria-live="polite"></span>
         </div>
+        <p class="section-help">Ajoutez les sujets à traiter, puis cochez-les au fil de la réunion.</p>
         <form id="agenda-form" class="inline-form">
           <label class="sr-only" for="agenda-text">Nouveau point</label>
-          <input id="agenda-text" placeholder="Ajouter un point" autocomplete="off" required>
+          <input id="agenda-text" maxlength="500" placeholder="Ajouter un point" autocomplete="off" required>
           <button type="submit">Ajouter</button>
         </form>
         <ul id="agenda-list" class="item-list" aria-live="polite"></ul>
       </section>
 
-      <section class="panel" aria-labelledby="proposals-title">
+      <section id="proposals" class="panel" aria-labelledby="proposals-title">
         <div class="section-heading">
           <div>
             <p class="eyebrow">Délibérer</p>
@@ -60,21 +101,22 @@
           </div>
           <span id="proposal-count" class="count" aria-live="polite"></span>
         </div>
-        <form id="proposal-form" class="stacked-form">
+        <p class="section-help">Le module structure les échanges sans imposer de méthode de gouvernance : votre groupe reste responsable de la décision.</p>
+        <form id="proposal-form" class="stacked-form creation-form">
           <label>
             Proposition
-            <input id="proposal-title" autocomplete="off" required>
+            <input id="proposal-title" maxlength="240" autocomplete="off" required>
           </label>
           <label>
             Contexte ou formulation complète
-            <textarea id="proposal-details" rows="3"></textarea>
+            <textarea id="proposal-details" maxlength="5000" rows="3"></textarea>
           </label>
           <button type="submit">Ajouter la proposition</button>
         </form>
         <div id="proposal-list" class="card-list" aria-live="polite"></div>
       </section>
 
-      <section class="panel" aria-labelledby="actions-title">
+      <section id="actions" class="panel" aria-labelledby="actions-title">
         <div class="section-heading">
           <div>
             <p class="eyebrow">Faire</p>
@@ -82,39 +124,54 @@
           </div>
           <span id="action-count" class="count" aria-live="polite"></span>
         </div>
-        <form id="action-form" class="form-grid">
+        <form id="action-form" class="form-grid creation-form">
           <label class="wide">
             Action
-            <input id="action-text" autocomplete="off" required>
+            <input id="action-text" maxlength="1000" autocomplete="off" required>
           </label>
           <label>
             Responsable
-            <input id="action-owner" autocomplete="off">
+            <input id="action-owner" maxlength="120" autocomplete="off">
           </label>
           <label>
             Échéance
             <input id="action-due" type="date">
+          </label>
+          <label class="wide">
+            Proposition liée (facultatif)
+            <select id="action-proposal">
+              <option value="">Aucune proposition liée</option>
+            </select>
           </label>
           <button type="submit">Ajouter l’action</button>
         </form>
         <ul id="action-list" class="item-list" aria-live="polite"></ul>
       </section>
 
-      <section class="panel export-panel" aria-labelledby="export-title">
+      <section id="export" class="panel export-panel" aria-labelledby="export-title">
         <div>
           <p class="eyebrow">Conserver</p>
           <h2 id="export-title">Partager un relevé</h2>
-          <p>Le relevé de travail doit ensuite être validé et archivé dans l’espace officiel de l’association.</p>
+          <p>Le relevé reste un document de travail. Faites-le valider, puis archivez la version officielle hors de la conversation.</p>
         </div>
         <div class="button-row">
           <button id="export-markdown" type="button">Partager le relevé (.md)</button>
           <button id="export-json" class="secondary" type="button">Partager les données (.json)</button>
         </div>
       </section>
+
+      <section class="archive-zone" aria-labelledby="archived-title">
+        <button id="archived-toggle" class="quiet" type="button" aria-expanded="false" aria-controls="archived-panel" hidden>Éléments archivés (0)</button>
+        <div id="archived-panel" class="panel" hidden>
+          <h2 id="archived-title">Éléments archivés</h2>
+          <p>Ils restent dans l’historique partagé et peuvent être restaurés.</p>
+          <ul id="archived-list" class="item-list"></ul>
+        </div>
+      </section>
     </main>
 
     <footer>
-      <p>Aucune requête Internet, publicité ou télémétrie. Les changements sont transportés par la conversation.</p>
+      <p>Aucune publicité, aucune télémétrie, aucune requête distante. Les données officielles restent dans l’espace documentaire de l’association.</p>
     </footer>
   </body>
 </html>

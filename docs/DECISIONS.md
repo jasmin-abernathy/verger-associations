@@ -16,6 +16,10 @@
 - Le dépôt est **privé** pendant le cadrage et le premier prototype.
 - Un premier prototype Webxdc est conservé dans le dépôt ; il ne constitue pas encore une version stable.
 - Aucun dépôt public ni contribution externe de code avant le choix explicite de la licence.
+- La version pilote 0.2 reste neutre sur la méthode de gouvernance : le groupe décide, l’application structure et conserve.
+- Les corrections utilisent un archivage réversible plutôt qu’une suppression silencieuse.
+- Le relevé Markdown et l’export JSON de schéma 2 sont les formats du pilote.
+- Les tests automatisés couvrent au minimum le rejeu, la convergence, les données invalides et les exports.
 
 ## Décisions à prendre
 

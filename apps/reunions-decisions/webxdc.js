@@ -6,7 +6,7 @@
   if (window.webxdc) return;
 
   const params = new URLSearchParams(window.location.hash.slice(1));
-  const key = "verger-reunions-decisions-updates-v1";
+  const key = "verger-reunions-decisions-updates-v2";
   let listener = function () {};
 
   function updates() {
@@ -19,9 +19,13 @@
 
   window.addEventListener("storage", function (event) {
     if (event.key !== key || !event.newValue) return;
-    const values = JSON.parse(event.newValue);
-    const latest = values[values.length - 1];
-    if (latest) listener({ ...latest, max_serial: values.length });
+    try {
+      const values = JSON.parse(event.newValue);
+      const latest = values[values.length - 1];
+      if (latest) listener({ ...latest, max_serial: values.length });
+    } catch (_error) {
+      // Une valeur locale invalide est ignorée dans le simulateur.
+    }
   });
 
   window.webxdc = {
@@ -33,9 +37,7 @@
       listener = callback;
       const values = updates();
       values.forEach(function (update) {
-        if (update.serial > (serial || 0)) {
-          callback({ ...update, max_serial: values.length });
-        }
+        if (update.serial > (serial || 0)) callback({ ...update, max_serial: values.length });
       });
       return Promise.resolve();
     },
