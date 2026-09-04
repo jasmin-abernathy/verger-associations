@@ -18,13 +18,16 @@
     <header class="app-header">
       <div class="brand-row">
         <div>
-          <p class="eyebrow">Le Verger du Numérique · version pilote 0.2</p>
+          <p class="eyebrow" data-site-context data-context-default="Le Verger du Numérique · version pilote 0.2">Le Verger du Numérique · version pilote 0.2</p>
           <h1>Réunions et décisions</h1>
           <p id="connection-status" class="status" role="status" aria-live="polite">Chargement de l’état partagé…</p>
         </div>
+        <div class="header-actions">
         <div class="progress-card" aria-labelledby="progress-label">
           <strong id="progress-label">0/5 étapes préparées</strong>
           <progress id="meeting-progress" value="0" max="5">0 sur 5</progress>
+        </div>
+        <button class="accessibility-toggle" type="button" data-verger-accessibility-toggle aria-pressed="false">Version accessible</button>
         </div>
       </div>
 
@@ -35,7 +38,6 @@
         <a data-step href="#actions"><span>4</span> Actions</a>
         <a data-step href="#export"><span>5</span> Relevé</a>
       </nav>
-      <button class="accessibility-toggle" type="button" data-verger-accessibility-toggle aria-pressed="false">Version accessible</button>
     </header>
 
     <main id="main" class="layout">
