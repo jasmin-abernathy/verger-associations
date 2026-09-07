@@ -3,6 +3,9 @@ name: Webxdc CI
 on:
   push:
     branches: [main]
+    tags:
+      - "v*"
+      - "xdc-*"
     paths:
       - "apps/**"
       - "tests/**"
@@ -15,6 +18,10 @@ on:
       - "scripts/**"
       - ".github/workflows/webxdc-ci.yml"
   workflow_dispatch:
+
+concurrency:
+  group: webxdc-ci-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -30,6 +37,9 @@ jobs:
         run: sh scripts/test.sh
 
   build:
+    # Creating and uploading the package is heavier than the test. Do it only
+    # when explicitly requested or for a deliberate release tag.
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
     needs: test
     uses: jasmin-abernathy/app-build-factory/.github/workflows/webxdc-build.yml@main
     with:
