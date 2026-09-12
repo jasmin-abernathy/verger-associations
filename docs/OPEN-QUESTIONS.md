@@ -2,13 +2,13 @@
 
 Ce document sépare les décisions nécessaires du simple stock d’idées. Une question est retirée lorsqu’elle est tranchée et ajoutée au journal des décisions.
 
-## Avant d’ouvrir le dépôt
+## Publication et identité
 
-- Quelle licence appliquer au code : AGPL-3.0, GPL-3.0, MPL-2.0 ou autre ?
-- Les documents suivent-ils la même licence que le code ?
 - Quels éléments de nom et d’identité graphique restent des marques distinctes du logiciel ?
+- Faut-il distinguer explicitement la licence des éventuels éléments graphiques tiers ?
+- Quels documents destinés aux pilotes doivent rester hors du dépôt public ?
 
-## Avant le pilote Aldebaran
+## Avant le pilote associatif
 
 - Qui participe aux deux premières réunions test ?
 - Quel groupe Delta Chat est utilisé ?
