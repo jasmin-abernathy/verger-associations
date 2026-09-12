@@ -10,12 +10,13 @@
 - Hitobito ou un back-office équivalent reste la source officielle.
 - Les intégrations externes passent par des robots explicites.
 - Le premier module est « Réunions et décisions ».
-- Aldebaran est le premier pilote envisagé.
+- Le premier pilote sera mené avec un collectif volontaire ; son identité n’est pas nécessaire au code ni à la documentation publique.
 - Aucun relais public ne sera ouvert avant validation d’un pilote.
 - Aucun client de messagerie complet ne sera développé au départ.
-- Le dépôt est **privé** pendant le cadrage et le premier prototype.
+- Le dépôt peut être développé publiquement à condition de ne jamais versionner de secret d’exploitation, de donnée personnelle ou d’information confidentielle liée à un pilote.
+- Le code du projet est placé sous **GNU AGPL v3, version 3 uniquement (`AGPL-3.0-only`)**.
+- Les contributions externes suivent `CONTRIBUTING.md` et la même licence sauf mention explicite compatible.
 - Un premier prototype Webxdc est conservé dans le dépôt ; il ne constitue pas encore une version stable.
-- Aucun dépôt public ni contribution externe de code avant le choix explicite de la licence.
 - La version pilote 0.2 reste neutre sur la méthode de gouvernance : le groupe décide, l’application structure et conserve.
 - Les corrections utilisent un archivage réversible plutôt qu’une suppression silencieuse.
 - Le relevé Markdown et l’export JSON de schéma 2 sont les formats du pilote.
@@ -23,7 +24,6 @@
 
 ## Décisions à prendre
 
-- licence open source et niveau de copyleft ;
 - méthode exacte de décision prise en charge par le premier module ;
 - formats d’export au-delà de Markdown et JSON ;
 - technologie du robot Hitobito ;
