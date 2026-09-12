@@ -6,14 +6,14 @@ Ce pourcentage mesure la progression vers un premier pilote utilisable, pas la m
 
 - [x] **0–15 % — Cadrage initial**
   - dépôt, vision, architecture et modules documentés ;
-  - pilote Aldebaran envisagé.
+  - premier pilote associatif envisagé.
 
 - [ ] **15–30 % — Validation du besoin**
-  - [ ] interroger les fondateurs d’Aldebaran ;
+  - [ ] interroger les responsables et participants d’un premier collectif pilote ;
   - [ ] tester Delta Chat sans développement ;
   - [x] examiner le format et les API Webxdc ;
   - [ ] comparer les mini-apps existantes ;
-  - [ ] choisir la licence du projet.
+  - [x] choisir et appliquer la licence du projet : AGPL-3.0-only.
 
 - [ ] **30–55 % — Prototype**
   - [x] construire le parcours complet « Réunions et décisions » ;
@@ -25,9 +25,9 @@ Ce pourcentage mesure la progression vers un premier pilote utilisable, pas la m
   - [ ] tester plusieurs participants et appareils réels ;
   - [ ] vérifier la navigation clavier et le zoom à 200 % dans Delta Chat.
 
-- [ ] **55–75 % — Pilote Aldebaran**
+- [ ] **55–75 % — Pilote associatif**
   - installer le groupe ;
-  - accompagner les 4 à 7 participants ;
+  - accompagner 4 à 7 participants ;
   - conduire au moins deux réunions réelles ;
   - recueillir les blocages et usages.
 
@@ -39,10 +39,10 @@ Ce pourcentage mesure la progression vers un premier pilote utilisable, pas la m
 - [ ] **90–100 % — Première version réutilisable**
   - corriger le pilote ;
   - stabiliser les formats d’export ;
-  - choisir et appliquer la licence ;
+  - [x] choisir et appliquer la licence ;
   - publier la documentation d’installation ;
   - préparer l’offre d’accompagnement du Potager du Web.
 
 ## Prochaine étape concrète
 
-Télécharger l’artefact produit par GitHub Actions, l’envoyer dans un groupe Delta Chat de test et exécuter le scénario à deux personnes avant le pilote Aldebaran.
+Télécharger l’artefact produit par GitHub Actions, l’envoyer dans un groupe Delta Chat de test et exécuter le scénario à deux personnes avant le premier pilote associatif.
