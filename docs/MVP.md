@@ -45,7 +45,7 @@ Le module reste neutre sur la méthode de décision. L’adoption d’une propos
 - l’état déjà reçu reste consultable hors connexion ;
 - les tests automatisés du modèle et du paquet réussissent.
 
-## Critères du pilote Aldebaran
+## Critères du pilote associatif
 
 - 4 à 7 personnes rejoignent le groupe ;
 - la première prise en main demande moins de 15 minutes ;
