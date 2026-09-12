@@ -49,17 +49,19 @@ Le paquet prêt à envoyer dans Delta Chat est généré dans `dist/reunions-dec
 7. **Entraide** — demandes et propositions d’aide.
 8. **Consultations** — questionnaires privés auprès des membres.
 9. **Signalements** — remontées de problèmes et suivi de résolution.
-10. **Alertes** — notifications qualifiables issues d’outils comme `alerts.lepotager.org`.
+10. **Alertes** — notifications qualifiables issues d’outils de veille compatibles.
 
 ## Premier pilote envisagé
 
-L’association **Aldebaran**, avec ses 4 à 7 fondateurs, constitue le terrain d’essai prioritaire :
+Le premier terrain d’essai doit rester volontairement petit afin de tester les usages avant d’élargir le périmètre :
 
 - un groupe Delta Chat ;
 - un canal d’annonces ;
 - la mini-application « Réunions et décisions » ;
-- à terme, un robot de rappels relié à Hitobito ;
+- à terme, un robot de rappels relié au back-office associatif ;
 - des tests Android et ordinateur.
+
+Les détails propres à une association pilote, ses membres et son organisation restent hors du dépôt public.
 
 ## Principes
 
@@ -80,7 +82,6 @@ L’association **Aldebaran**, avec ses 4 à 7 fondateurs, constitue le terrain 
 - Les données juridiques, comptables et administratives ne doivent pas reposer uniquement sur les conversations.
 - Chatmail est un transport éphémère, pas un archivage documentaire permanent.
 - L’adoption de Delta Chat par les membres doit être validée en situation réelle.
-- Le choix de licence doit être arrêté avant toute ouverture du dépôt ou acceptation de contributions externes.
 
 ## Documentation
 
@@ -91,7 +92,7 @@ L’association **Aldebaran**, avec ses 4 à 7 fondateurs, constitue le terrain 
 - [Périmètre du MVP](docs/MVP.md)
 - [Modèle de données](docs/DATA-MODEL.md)
 - [Modules](docs/MODULES.md)
-- [Pilote Aldebaran](docs/PILOT-ALDEBARAN.md)
+- [Pilote associatif](docs/PILOT.md)
 - [Feuille de route](docs/ROADMAP.md)
 - [Questions ouvertes](docs/OPEN-QUESTIONS.md)
 - [Sécurité et vie privée](docs/SECURITY-PRIVACY.md)
@@ -107,4 +108,6 @@ L’association **Aldebaran**, avec ses 4 à 7 fondateurs, constitue le terrain 
 
 ## Licence
 
-Le choix de licence est en cours. Le projet vise une publication open source ; aucun fichier de licence ne sera ajouté avant une décision explicite sur le niveau de copyleft souhaité.
+Verger Associations est distribué sous **GNU Affero General Public License v3.0 only (`AGPL-3.0-only`)**. Voir `LICENSE`.
+
+Les signalements de sécurité doivent suivre `SECURITY.md` et ne pas être publiés d’abord dans une issue publique.
