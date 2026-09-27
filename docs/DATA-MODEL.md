@@ -1,79 +1,85 @@
-# Modèle de données
+# Modèle de données v0.3
 
 ## Principes
 
 - conserver le minimum nécessaire ;
-- distinguer état de travail et archive officielle ;
-- utiliser des identifiants stables ;
-- rendre les opérations rejouables sans doublon ;
-- prévoir un export dans des formats ouverts ;
-- éviter de copier les données de membres déjà présentes dans Hitobito ;
-- archiver logiquement au lieu d’effacer silencieusement.
+- un modèle commun plutôt qu’un silo par module ;
+- identifiants stables ;
+- fusion concurrente déléguée à Automerge ;
+- archivage logique lorsque l’historique doit être conservé ;
+- export dans un format ouvert ;
+- données administratives sensibles hors socle par défaut.
 
-## Entités du pilote
+## Document racine
 
-### Réunion
+```text
+organization
+members
+meetings
+  ├── agenda
+  └── proposals
+       └── contributions
+actions
+events
+volunteerNeeds
+consultations
+alerts
+metadata
+```
 
-`title`, `date`, `facilitator`, `secretary` et `archiveReference` décrivent la réunion et le lien humainement lisible vers sa future archive officielle.
+## Association
 
-### Point d’ordre du jour
+`id`, `name`, `description`, `createdAt`, `updatedAt`.
 
-`text`, `done`, `archived`, `createdAt`, `updatedAt` et `updatedBy` décrivent un sujet à traiter.
+## Membre
 
-### Proposition
+`id`, `name`, `role`, `contact`, `archived`, `createdAt`.
 
-`title`, `details`, `status`, `decisionText`, `reviewDate`, `archived`, `createdAt`, `updatedAt` et `updatedBy` décrivent la délibération et son résultat.
+Le modèle est volontairement minimal. Cotisations, pièces et informations légales ne sont pas ajoutées tant que leur besoin et leurs droits ne sont pas définis.
 
-Les statuts admis sont `draft`, `clarification`, `discussion`, `objection`, `amendment`, `accepted` et `rejected`.
+## Réunion
 
-### Contribution
+`id`, `title`, `date`, `facilitator`, `secretary`, `archiveReference`, `agenda`, `proposals`, `archived`, `createdAt`.
 
-`proposalId`, `type`, `text`, `author`, `resolved`, `archived`, `createdAt`, `updatedAt` et `updatedBy` rattachent une clarification, réaction, objection ou proposition d’amendement à une proposition.
+## Proposition
 
-### Action
+`id`, `title`, `details`, `status`, `decisionMethod`, `decisionText`, `reviewDate`, `contributions`, `archived`, `createdAt`.
 
-`proposalId`, `text`, `owner`, `due`, `done`, `archived`, `createdAt`, `updatedAt` et `updatedBy` décrivent une suite concrète. Le lien à une proposition est facultatif.
+Méthodes prévues : `consent`, `majority`, `majorityJudgment`, `board`, `consensus`, `other`.
 
-## Enveloppe de mise à jour Webxdc
+Le jugement majoritaire n’est pas encore calculé par la PWA : la valeur réserve le contrat métier avec l’urne Mieux Voter.
+
+## Contribution
+
+`id`, `type`, `text`, `author`, `resolved`, `archived`, `createdAt`.
+
+Types : `clarification`, `reaction`, `objection`, `amendment`.
+
+## Action
+
+`id`, `text`, `owner`, `due`, `meetingId`, `proposalId`, `done`, `archived`, `createdAt`.
+
+## Événement
+
+`id`, `title`, `date`, `location`, `participants`, `archived`, `createdAt`.
+
+## Besoin bénévole
+
+`id`, `title`, `slots`, `eventId`, `assignments`, `closed`, `archived`, `createdAt`.
+
+## Convergence
+
+Le prototype v0.2 utilisait des patchs Webxdc horodatés logiquement. La v0.3 remplace ce mécanisme par Automerge CRDT afin de fusionner les historiques concurrents sans maintenir un algorithme de convergence spécifique au projet.
+
+## Export portable
 
 ```json
 {
-  "version": 2,
-  "type": "patch",
-  "collection": "contributions",
-  "id": "identifiant-stable",
-  "fields": {
-    "proposalId": "proposal-123",
-    "type": "objection",
-    "text": "Prévoir une rotation",
-    "resolved": false
-  },
-  "stamp": {
-    "counter": 12,
-    "actor": "adresse-fournie-par-la-messagerie"
-  }
+  "format": "verger-associations",
+  "schemaVersion": 1,
+  "exportedAt": "2026-09-27T00:00:00.000Z",
+  "data": {}
 }
 ```
 
-Chaque champ conserve la dernière estampille logique connue. Le compteur le plus élevé gagne, puis l’identifiant de l’acteur départage une égalité. Les opérations 0.1 de version `1` restent acceptées.
-
-Les collections, champs, types et tailles de texte sont validés avant application. Les identifiants susceptibles de modifier le prototype JavaScript sont refusés.
-
-## Convergence et limites
-
-Une mise à jour rejouée ne crée pas de doublon. Deux séries d’opérations reçues dans un ordre différent convergent vers la même valeur. Deux personnes modifiant simultanément le même champ peuvent cependant écraser l’intention de l’autre : ce cas doit être observé pendant le pilote.
-
-## Répartition de la conservation
-
-| Donnée | Emplacement de travail | Emplacement durable |
-|---|---|---|
-| Ordre du jour en cours | Webxdc | Export facultatif |
-| Proposition en discussion | Webxdc | Export si utile |
-| Décision adoptée | Webxdc puis export | Stockage documentaire officiel |
-| Action de suivi | Webxdc | Back-office si suivi long |
-| Membres, rôles et cotisations | Hitobito | Hitobito |
-| Procès-verbal signé | Jamais uniquement Webxdc | Stockage documentaire officiel |
-
-## Export JSON
-
-L’export `schemaVersion: 2` contient les cinq collections. Les éléments archivés y restent présents afin de préserver la réversibilité ; ils sont masqués dans le relevé Markdown courant.
+Cet export sert à la sauvegarde et à la migration. Les exports lisibles (Markdown, PDF, ICS, CSV) sont des vues métier complémentaires.

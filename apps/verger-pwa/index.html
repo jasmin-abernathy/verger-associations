@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#315f3a">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="Verger Associations — suite associative libre, sobre et local-first.">
+  <title>Verger Associations</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./src/styles.css">
+  <script type="module" src="./src/main.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#content">Aller au contenu</a>
+  <header class="topbar">
+    <div class="brand">
+      <img src="./icon.svg" alt="" width="42" height="42">
+      <div>
+        <strong>Verger Associations</strong>
+        <span id="org-name-header">Chargement…</span>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <span id="connection-state" class="status-pill" role="status" aria-live="polite">Local</span>
+      <button id="install-app" class="secondary" type="button" hidden>Installer</button>
+      <button id="accessible-mode" class="secondary" type="button" aria-pressed="false">Version accessible</button>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <nav class="sidebar" aria-label="Sections de Verger Associations">
+      <button data-view="dashboard" class="nav-item is-active" type="button">Accueil</button>
+      <button data-view="members" class="nav-item" type="button">Membres</button>
+      <button data-view="meetings" class="nav-item" type="button">Réunions</button>
+      <button data-view="decisions" class="nav-item" type="button">Décisions</button>
+      <button data-view="actions" class="nav-item" type="button">Actions</button>
+      <button data-view="events" class="nav-item" type="button">Événements</button>
+      <button data-view="volunteers" class="nav-item" type="button">Bénévolat</button>
+      <button data-view="more" class="nav-item" type="button">Autres modules</button>
+      <button data-view="settings" class="nav-item" type="button">Réglages</button>
+    </nav>
+
+    <main id="content" tabindex="-1">
+      <section data-panel="dashboard" class="view-panel"></section>
+      <section data-panel="members" class="view-panel" hidden></section>
+      <section data-panel="meetings" class="view-panel" hidden></section>
+      <section data-panel="decisions" class="view-panel" hidden></section>
+      <section data-panel="actions" class="view-panel" hidden></section>
+      <section data-panel="events" class="view-panel" hidden></section>
+      <section data-panel="volunteers" class="view-panel" hidden></section>
+      <section data-panel="more" class="view-panel" hidden></section>
+      <section data-panel="settings" class="view-panel" hidden></section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>

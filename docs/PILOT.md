@@ -1,50 +1,54 @@
-# Pilote associatif
+# Pilote associatif v0.3
 
 ## Contexte
 
-Le premier pilote doit se dérouler avec un petit groupe volontaire au sein d’une association ou d’un collectif. Le back-office associatif peut reposer sur Hitobito ou un outil équivalent ; aucune donnée administrative sensible n’est nécessaire pour tester le module Webxdc.
+Le premier pilote cible désormais la PWA autonome Verger Associations. Aucun compte Delta Chat, Chatmail ou Hitobito n’est requis pour tester les fonctions principales.
 
 ## Objectifs
 
-- vérifier que l’installation de Delta Chat est compréhensible ;
-- tester l’usage sur Android et ordinateur ;
-- évaluer la pertinence des groupes et canaux ;
-- tester la mini-app « Réunions et décisions » ;
-- mesurer le besoin réel de connexion avec un back-office associatif ;
+- vérifier que l’ouverture ou l’installation de la PWA est compréhensible ;
+- tester Android et ordinateur ;
+- vérifier le fonctionnement hors ligne ;
+- vérifier la resynchronisation Automerge ;
+- tester Réunions, Décisions, Actions, Événements et Bénévolat ;
+- mesurer le besoin réel de connecteurs administratifs ;
 - identifier les difficultés d’accompagnement.
 
 ## Configuration minimale
 
-- un profil Chatmail par participant ;
-- un groupe de travail ;
-- un canal d’annonces ;
-- la mini-app Webxdc de prototype ;
-- aucun transfert initial de données administratives sensibles.
+- une URL HTTPS de la PWA ;
+- un document d’association ;
+- 4 à 7 participants ;
+- un serveur Verger Sync privé pour les tests multi-appareils ;
+- aucune donnée administrative sensible au départ.
 
 ## Scénarios de test
 
-1. rejoindre le groupe par QR code ou lien ;
-2. recevoir une annonce ;
+1. ouvrir ou installer la PWA ;
+2. ajouter deux membres ;
 3. préparer une réunion ;
-4. examiner une proposition ;
-5. enregistrer une décision et ses actions ;
-6. retrouver ou exporter le relevé ;
-7. ajouter un second appareil ;
-8. quitter proprement le groupe.
+4. ajouter une proposition et une objection ;
+5. enregistrer méthode et décision ;
+6. créer une action liée ;
+7. créer un événement et un besoin bénévole ;
+8. couper le réseau sur un appareil et continuer à travailler ;
+9. reconnecter et vérifier la convergence ;
+10. exporter une sauvegarde puis la réimporter dans un environnement de test.
 
 ## Critères de réussite provisoires
 
-- installation réalisable sans intervention technique lourde ;
-- première prise en main en moins de 15 minutes ;
+- installation sans intervention technique lourde ;
+- prise en main en moins de 15 minutes ;
 - usage effectif par la majorité du groupe ;
-- absence de perte d’une décision importante ;
+- aucune décision importante perdue ;
+- resynchronisation comprise et fiable ;
 - export compréhensible ;
-- demande explicite de poursuivre après le test.
+- demande explicite de poursuivre.
 
 ## Ce que le pilote ne doit pas faire
 
-- remplacer immédiatement le back-office associatif ;
-- stocker des cotisations ou pièces d’identité dans les conversations ;
-- ouvrir un relais public ;
+- stocker des pièces d’identité ou secrets ;
+- servir plusieurs associations non liées avec le même jeton ;
+- remplacer immédiatement la comptabilité ou les archives juridiques ;
 - imposer une migration définitive ;
-- ajouter plusieurs modules avant validation du premier.
+- développer tous les modules avant validation du socle.

@@ -1,0 +1,21 @@
+{
+  "name": "@verger-associations/sync",
+  "private": true,
+  "version": "0.1.0-alpha.1",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check auth.js && node --check server.js && node tests.mjs",
+    "test": "node tests.mjs"
+  },
+  "dependencies": {
+    "@automerge/automerge-repo": "^2.4.0",
+    "@automerge/automerge-repo-network-websocket": "^2.4.0",
+    "@automerge/automerge-repo-storage-nodefs": "^2.4.0",
+    "express": "^4.21.2",
+    "ws": "^8.18.0"
+  }
+}

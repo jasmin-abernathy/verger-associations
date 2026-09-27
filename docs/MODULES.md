@@ -1,89 +1,100 @@
-# Modules envisagés
+# Modules
 
-## Priorité 0 — premier prototype
+Les modules partagent désormais **le même document métier**. Ils ne doivent pas devenir une collection de mini-applications séparées si leurs données sont liées.
+
+## Socle v0.3 — déjà présent
+
+### Membres
+
+- nom ;
+- rôle ;
+- contact facultatif ;
+- modèle volontairement minimal avant définition des permissions et données administratives.
 
 ### Réunions et décisions
 
-- préparer un ordre du jour ;
-- ajouter une proposition ;
-- poser des questions de clarification ;
-- recueillir réactions et objections ;
-- amender la proposition ;
-- choisir la règle de décision ;
-- enregistrer le résultat ;
-- attribuer les actions ;
-- fixer une date de révision ;
-- exporter un relevé lisible.
-
-## Priorité 1 — coordination quotidienne
+- ordre du jour ;
+- propositions ;
+- clarifications, réactions, objections et amendements ;
+- statut ;
+- méthode de décision structurée ;
+- formulation retenue ;
+- date de révision ;
+- actions liées.
 
 ### Actions
 
-- tâches ;
-- responsables ;
-- échéances ;
-- matériel nécessaire ;
-- statut et progression.
+- tâche ;
+- responsable ;
+- échéance ;
+- état ;
+- lien possible vers réunion et proposition.
 
 ### Événements
 
-- propositions de dates ;
-- disponibilités ;
-- inscriptions ;
-- rôles ;
-- informations pratiques.
+- titre ;
+- date ;
+- lieu ;
+- structure prête à accueillir inscriptions et rôles.
+
+### Bénévolat
+
+- besoin ;
+- nombre de personnes ;
+- événement lié ;
+- clôture du besoin.
+
+## Priorité suivante
 
 ### Accueil
 
-- étapes d’arrivée ;
-- documents à lire ;
-- contacts utiles ;
-- premières tâches ;
-- validation de la prise en main.
-
-### Bénévoles
-
-- besoins de l’association ;
-- disponibilités ;
-- compétences proposées ;
-- affectation volontaire.
-
-## Priorité 2 — réseau et services
+- parcours d’arrivée ;
+- documents ;
+- contacts ;
+- premières tâches.
 
 ### Entraide
 
 - demandes ;
 - offres ;
-- mise en relation au sein d’un groupe choisi ;
-- clôture et retour d’expérience.
+- mise en relation ;
+- clôture.
 
 ### Consultations
 
-- questionnaire privé ;
-- réponses anonymes ou nominatives selon le besoin ;
+- questionnaire ;
+- choix du caractère nominatif/anonyme ;
 - synthèse exportable.
 
 ### Signalements
 
 - description ;
-- pièces jointes ;
+- pièces jointes lorsque le stockage de fichiers sera défini ;
 - responsable ;
 - statut ;
 - résolution.
 
 ### Alertes
 
-- réception d’une alerte issue d’un outil externe ;
-- qualification : pertinent, à étudier, ignorer ;
+- import d’une alerte externe ;
+- qualification ;
 - attribution ;
-- suivi de l’action.
+- suivi.
+
+### Jugement majoritaire
+
+- préparation du scrutin dans Verger ;
+- passage à l’urne Mieux Voter ;
+- import du résultat agrégé ;
+- rattachement à la proposition et au relevé.
 
 ## Règle de développement
 
-Un module ne passe en développement que si :
+Un module passe en développement si :
 
-1. un besoin réel est formulé ;
-2. les outils existants ont été vérifiés ;
-3. Webxdc est adapté au besoin ;
-4. le mode de conservation des données est explicite ;
-5. un groupe pilote accepte de le tester.
+1. le besoin est réel ou nécessaire à la parité v0.2 ;
+2. une brique libre existante a été vérifiée ;
+3. les données ont une place claire dans le modèle commun ;
+4. le fonctionnement hors ligne est défini ;
+5. le mode d’export et de suppression/archivage est explicite ;
+6. le pilote ou la cohérence du produit justifie sa présence.

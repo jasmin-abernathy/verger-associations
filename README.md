@@ -1,121 +1,105 @@
 # Verger Associations
 
-Suite libre, sobre et *local-first* d’outils numériques destinés aux associations, collectifs, SCOP et SCIC.
+Suite libre, sobre et **local-first** d’outils numériques destinés aux associations, collectifs, SCOP et SCIC.
 
-> **Statut : version pilote 0.2.** La mini-application Webxdc « Réunions et décisions » couvre désormais le cycle de délibération complet et dispose de tests automatisés. Elle doit encore être validée à plusieurs sur des appareils réels avant d’être présentée comme stable.
+> **Statut : pivot v0.3 en cours.** Verger Associations devient une PWA autonome : une seule application pour les membres, réunions, décisions, actions, événements et bénévolat. Le prototype Webxdc v0.2 reste conservé comme référence jusqu’à parité fonctionnelle et validation du nouveau client.
 
 ## Positionnement
 
-Le projet est édité par **Le Verger du Numérique**.  
-L’installation, la personnalisation, la formation et la maintenance pourront être proposées par **Le Potager du Web**.
+Le projet est édité par **Le Verger du Numérique**. L’installation, la personnalisation, la formation et la maintenance pourront être proposées par **Le Potager du Web**.
 
-L’objectif n’est pas de recréer une messagerie, un annuaire d’adhérents ou un réseau social. Le projet assemble des briques libres existantes pour se concentrer sur les usages réellement associatifs.
+L’objectif est qu’une association puisse utiliser **une seule application**, y compris hors connexion, sans être obligée d’adopter un autre outil de messagerie ou de gestion pour accéder aux fonctions principales.
 
-## Architecture retenue
+## Architecture cible v0.3
 
-- **Hitobito ou un back-office associatif** : source officielle pour les membres, rôles, cotisations et données durables.
-- **Chatmail / Delta Chat** : conversations, groupes, canaux, fichiers, invitations et notifications.
-- **Webxdc** : mini-applications collaboratives fonctionnant dans les discussions, sans compte supplémentaire ni serveur applicatif permanent.
-- **Robots Chatmail** : rappels, alertes et synchronisations avec Hitobito ou d’autres services.
-- **Site public** : présentation, dons, formulaires externes et informations accessibles sans messagerie.
+- **PWA Verger Associations** : interface unique installable depuis le navigateur ;
+- **Automerge Repo** : document collaboratif et résolution des modifications concurrentes ;
+- **IndexedDB** : stockage local sur l’appareil ;
+- **BroadcastChannel** : synchronisation locale entre onglets ;
+- **Verger Sync** : serveur WebSocket auto-hébergé et facultatif pour la synchronisation entre appareils ;
+- **exports portables** : réversibilité hors du serveur ;
+- **connecteurs facultatifs** : Paheko, Hitobito, Communication libre ou d’autres services uniquement si un besoin réel le justifie.
+
+Voir [`docs/ARCHITECTURE-V03.md`](docs/ARCHITECTURE-V03.md).
+
+## Nouveau client autonome
+
+Le code se trouve dans [`apps/verger-pwa`](apps/verger-pwa/README.md).
+
+Le socle v0.3 contient déjà :
+
+- Membres ;
+- Réunions ;
+- ordre du jour ;
+- propositions et contributions ;
+- décisions et méthode de décision ;
+- Actions ;
+- Événements ;
+- besoins de bénévolat ;
+- export/import JSON portable ;
+- mode accessible ;
+- service worker et manifeste PWA ;
+- stockage Automerge/IndexedDB ;
+- synchronisation WebSocket facultative.
+
+Les modules Accueil, Entraide, Consultations, Signalements et Alertes restent à développer après validation du socle.
+
+## Serveur de synchronisation
+
+[`services/verger-sync`](services/verger-sync/README.md) fournit le pair Automerge auto-hébergé du pilote.
+
+Il ajoute une barrière par jeton au serveur de référence Automerge, mais **ce jeton partagé n’est pas encore une authentification multi-utilisateur complète**. Le serveur ne doit pas être mutualisé entre associations non liées avant ajout des comptes, invitations et révocations.
+
+## Prototype Webxdc historique
+
+[`apps/reunions-decisions`](apps/reunions-decisions/README.md) reste disponible et testable. Il a validé le modèle métier du premier module : ordre du jour, propositions, objections, amendements, décisions, actions, archivage et exports.
+
+Il n’est plus l’architecture cible et ne doit pas recevoir de nouvelles fonctions qui peuvent être développées directement dans la PWA v0.3.
+
+## Briques libres étudiées
+
+- **Automerge / Automerge Repo** — socle local-first et CRDT, licence MIT ;
+- **Paheko** — référence métier associative française et futur connecteur potentiel, AGPL-3.0 ;
+- **Loomio** — référence pour les processus de décision collective, AGPL-3.0 ;
+- **Mieux Voter** — urne hors ligne au jugement majoritaire, GPL-3.0.
+
+Le but n’est pas d’empiler quatre applications visibles par l’utilisateur : Verger réutilise les briques pertinentes derrière une interface cohérente.
 
 ## Frontière avec Communication libre
 
-Verger Associations développe des **outils métier associatifs** : réunions, décisions, actions et exports vers une archive officielle. Son pilote actuel fonctionne dans Delta Chat grâce à Webxdc ; il ne fournit pas d'infrastructure Matrix/Element ou Jitsi.
+[Communication libre](https://github.com/jasmin-abernathy/communication-libre) reste un projet distinct consacré à la communication. Verger Associations ne recrée pas sa messagerie ou sa visioconférence.
 
-[Communication libre](https://github.com/jasmin-abernathy/communication-libre) est un POC indépendant de **messagerie et visioconférence** pour collectifs, fondé sur Matrix/Element et Jitsi. Les deux projets ne doivent pas développer chacun une seconde messagerie pour reproduire l'autre. Leurs pilotes et leurs choix de transport restent séparés.
-
-Un relevé validé, exporté en Markdown ou JSON versionné, peut être transmis ou archivé indépendamment de la messagerie utilisée. Le paquet Webxdc actuel n'est pas compatible tel quel avec Element ; une interface Matrix éventuelle serait un chantier distinct, justifié par un usage réel.
-
-## Prototype disponible
-
-Le code du premier module se trouve dans [`apps/reunions-decisions`](apps/reunions-decisions/README.md).
-
-La version pilote permet de :
-
-- préparer la réunion et son ordre du jour ;
-- faire progresser une proposition de la clarification à la décision ;
-- consigner réactions, objections et amendements, puis leur traitement ;
-- enregistrer la formulation retenue et une date de révision ;
-- attribuer des actions liées aux propositions ;
-- archiver sans effacer, puis exporter le relevé en Markdown ou JSON.
-
-Le paquet prêt à envoyer dans Delta Chat est généré dans `dist/reunions-decisions.xdc` avec :
-
-```bash
-./scripts/build-xdc.sh
-```
-
-## Premiers modules envisagés
-
-1. **Décisions** — propositions, clarifications, objections, amendements, décision, responsables et date de révision.
-2. **Actions** — tâches, responsables, matériel, échéances et progression.
-3. **Réunions** — ordre du jour, disponibilités, décisions et suites.
-4. **Événements** — choix de date, inscriptions, rôles et organisation.
-5. **Bénévoles** — besoins, disponibilités et répartition.
-6. **Accueil** — parcours des nouveaux membres, documents et contacts.
-7. **Entraide** — demandes et propositions d’aide.
-8. **Consultations** — questionnaires privés auprès des membres.
-9. **Signalements** — remontées de problèmes et suivi de résolution.
-10. **Alertes** — notifications qualifiables issues d’outils de veille compatibles.
-
-## Premier pilote envisagé
-
-Le premier terrain d’essai doit rester volontairement petit afin de tester les usages avant d’élargir le périmètre :
-
-- un groupe Delta Chat ;
-- un canal d’annonces ;
-- la mini-application « Réunions et décisions » ;
-- à terme, un robot de rappels relié au back-office associatif ;
-- des tests Android et ordinateur.
-
-Les détails propres à une association pilote, ses membres et son organisation restent hors du dépôt public.
+Une intégration future peut ajouter des liens, notifications ou exports entre les deux, sans rendre Communication libre obligatoire pour faire fonctionner Verger Associations.
 
 ## Principes
 
 - open source ;
 - sobriété numérique ;
 - accessibilité ;
-- fonctionnement local et hors ligne quand possible ;
-- chiffrement de bout en bout ;
+- fonctionnement local et hors ligne ;
 - minimum de données ;
 - pas de publicité ni de pistage ;
 - réversibilité et formats exportables ;
+- auto-hébergement possible ;
+- composants externes facultatifs plutôt que dépendances utilisateur imposées ;
 - développement progressif à partir de besoins testés.
-
-## Limites connues
-
-- Chatmail n’est pas un *backend* applicatif classique : il transporte les messages et les mises à jour Webxdc via Delta Chat.
-- Webxdc n’accède pas directement à Internet : les intégrations externes passent par un robot ou un lien explicitement ouvert.
-- Les données juridiques, comptables et administratives ne doivent pas reposer uniquement sur les conversations.
-- Chatmail est un transport éphémère, pas un archivage documentaire permanent.
-- L’adoption de Delta Chat par les membres doit être validée en situation réelle.
 
 ## Documentation
 
+- [Architecture v0.3](docs/ARCHITECTURE-V03.md)
+- [Migration du prototype](docs/MIGRATION-V03.md)
+- [Architecture historique](docs/ARCHITECTURE.md)
 - [Vision et périmètre](docs/VISION.md)
-- [Architecture](docs/ARCHITECTURE.md)
-- [Chatmail, Delta Chat et Webxdc](docs/CHATMAIL.md)
-- [Cas d’usage](docs/USE-CASES.md)
-- [Périmètre du MVP](docs/MVP.md)
+- [MVP](docs/MVP.md)
 - [Modèle de données](docs/DATA-MODEL.md)
 - [Modules](docs/MODULES.md)
-- [Pilote associatif](docs/PILOT.md)
 - [Feuille de route](docs/ROADMAP.md)
 - [Questions ouvertes](docs/OPEN-QUESTIONS.md)
 - [Sécurité et vie privée](docs/SECURITY-PRIVACY.md)
 - [Journal des décisions](docs/DECISIONS.md)
-- [Contribuer](CONTRIBUTING.md)
-
-## Références techniques
-
-- [Chatmail](https://chatmail.at/)
-- [Delta Chat](https://delta.chat/)
-- [Webxdc](https://webxdc.org/)
-- [Hitobito](https://hitobito.com/)
 
 ## Licence
 
-Verger Associations est distribué sous **GNU Affero General Public License v3.0 only (`AGPL-3.0-only`)**. Voir `LICENSE`.
+Verger Associations est distribué sous **GNU Affero General Public License v3.0 only (`AGPL-3.0-only`)**. Les dépendances conservent leurs propres licences compatibles.
 
 Les signalements de sécurité doivent suivre `SECURITY.md` et ne pas être publiés d’abord dans une issue publique.

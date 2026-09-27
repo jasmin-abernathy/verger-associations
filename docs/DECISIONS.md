@@ -5,30 +5,35 @@
 - Nom du projet : **Verger Associations**.
 - Éditeur visé : **Le Verger du Numérique**.
 - Services associés possibles : **Le Potager du Web**.
-- Chatmail / Delta Chat fournit la communication du pilote Verger Associations ; ce choix ne constitue pas une obligation pour tous les collectifs.
-- Le POC distinct [Communication libre](https://github.com/jasmin-abernathy/communication-libre) évalue Matrix/Element et Jitsi comme infrastructure de communication, sans reprendre les fonctions métier de Verger Associations.
-- Le point de jonction envisagé est le relevé de décision validé exporté en Markdown ou JSON versionné, puis conservé dans une archive officielle. Aucune compatibilité Webxdc/Element ni synchronisation de messagerie n'est annoncée.
-- Webxdc fournit les mini-applications collaboratives.
-- Hitobito ou un back-office équivalent reste la source officielle.
-- Les intégrations externes passent par des robots explicites.
-- Le premier module est « Réunions et décisions ».
-- Le premier pilote sera mené avec un collectif volontaire ; son identité n’est pas nécessaire au code ni à la documentation publique.
-- Aucun relais public ne sera ouvert avant validation d’un pilote.
-- Aucun client de messagerie complet ne sera développé au départ.
-- Le dépôt peut être développé publiquement à condition de ne jamais versionner de secret d’exploitation, de donnée personnelle ou d’information confidentielle liée à un pilote.
 - Le code du projet est placé sous **GNU AGPL v3, version 3 uniquement (`AGPL-3.0-only`)**.
-- Les contributions externes suivent `CONTRIBUTING.md` et la même licence sauf mention explicite compatible.
-- Un premier prototype Webxdc est conservé dans le dépôt ; il ne constitue pas encore une version stable.
-- La version pilote 0.2 reste neutre sur la méthode de gouvernance : le groupe décide, l’application structure et conserve.
-- Les corrections utilisent un archivage réversible plutôt qu’une suppression silencieuse.
-- Le relevé Markdown et l’export JSON de schéma 2 sont les formats du pilote.
-- Les tests automatisés couvrent au minimum le rejeu, la convergence, les données invalides et les exports.
+- Le dépôt peut être développé publiquement sans secret d’exploitation, donnée personnelle ou information confidentielle de pilote.
+- Le premier cycle métier prioritaire reste **Réunion → proposition → contribution → décision → action**.
+- Les corrections doivent rester traçables et l’export/réversibilité est une exigence du produit.
 
-## Décisions à prendre
+### Pivot v0.3 — 27 septembre 2026
 
-- méthode exacte de décision prise en charge par le premier module ;
-- formats d’export au-delà de Markdown et JSON ;
-- technologie du robot Hitobito ;
-- durée et protocole du pilote ;
-- critères d’accessibilité vérifiables ;
-- identité graphique des modules.
+- Verger Associations devient une **PWA autonome local-first**.
+- Delta Chat, Chatmail et Webxdc ne sont plus des dépendances du produit cible.
+- Le prototype Webxdc v0.2 est conservé temporairement comme référence et preuve de concept jusqu’à parité.
+- Hitobito n’est plus imposé comme source officielle : Paheko, Hitobito ou un autre back-office peuvent devenir des connecteurs facultatifs.
+- **Automerge Repo** est retenu pour l’état collaboratif, la fusion concurrente et le stockage local via IndexedDB.
+- Le client doit rester utilisable sans serveur de synchronisation.
+- Un serveur **Verger Sync** WebSocket auto-hébergé est ajouté comme transport facultatif entre appareils.
+- Le serveur de pilote doit refuser les connexions sans jeton ; le jeton partagé n’est pas considéré comme suffisant pour un service multi-tenant.
+- La PWA regroupe dans un modèle commun Membres, Réunions, Décisions, Actions, Événements et Bénévolat.
+- Accueil, Entraide, Consultations, Signalements et Alertes seront ajoutés uniquement après validation du socle ou besoin pilote.
+- Paheko sert de référence métier et de futur connecteur potentiel, pas de dépendance obligatoire.
+- Loomio sert de référence de processus décisionnel, pas de dépendance technique.
+- Mieux Voter reste l’urne spécialisée envisagée pour le jugement majoritaire ; Verger vise l’import/export de scrutin et de résultat agrégé plutôt que la duplication immédiate du moteur.
+- Communication libre reste un projet séparé ; une interopérabilité peut être ajoutée sans fusionner les deux produits.
+
+## Décisions encore à prendre
+
+- mécanisme d’authentification individuelle après le pilote ;
+- modèle de permissions et rôles ;
+- chiffrement serveur des données au repos et gestion des clés ;
+- protocole d’invitation et révocation ;
+- premier connecteur administratif réellement demandé ;
+- formats métier à ajouter au JSON portable : Markdown, PDF, ICS, CSV ;
+- stratégie de migration d’un document Webxdc v0.2 vers le schéma v0.3 ;
+- identité graphique finale et nom éventuel de l’instance installée.

@@ -1,0 +1,26 @@
+{
+  "name": "@verger-associations/pwa",
+  "private": true,
+  "version": "0.3.0-alpha.1",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node tests/domain.test.mjs",
+    "check": "node --check src/domain.js && node --check src/main.js && npm test"
+  },
+  "dependencies": {
+    "@automerge/automerge-repo": "^2.4.0",
+    "@automerge/automerge-repo-network-broadcastchannel": "^2.4.0",
+    "@automerge/automerge-repo-network-websocket": "^2.4.0",
+    "@automerge/automerge-repo-storage-indexeddb": "^2.4.0"
+  },
+  "devDependencies": {
+    "vite": "^8.0.14",
+    "vite-plugin-wasm": "^3.6.0"
+  }
+}

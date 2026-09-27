@@ -1,59 +1,47 @@
 # Questions ouvertes
 
-Ce document sépare les décisions nécessaires du simple stock d’idées. Une question est retirée lorsqu’elle est tranchée et ajoutée au journal des décisions.
+## Avant le pilote PWA
 
-## Publication et identité
+- Qui participe aux deux premières réunions ?
+- Quel hébergement sert la PWA ?
+- Où déployer Verger Sync pour le pilote ?
+- Quel protocole de sauvegarde/restauration appliquer ?
+- Comment gérer la perte d’un appareil avant l’authentification individuelle ?
 
-- Quels éléments de nom et d’identité graphique restent des marques distinctes du logiciel ?
-- Faut-il distinguer explicitement la licence des éventuels éléments graphiques tiers ?
-- Quels documents destinés aux pilotes doivent rester hors du dépôt public ?
+## Authentification et permissions
 
-## Avant le pilote associatif
+- Comptes propres au Verger ou fournisseur d’identité externe facultatif ?
+- Comment inviter et révoquer un membre ?
+- Quels rôles ont réellement besoin de droits différents ?
+- Une décision doit-elle pouvoir être verrouillée après validation ?
+- Comment conserver une expérience simple sans transformer les permissions en usine à gaz ?
 
-- Qui participe aux deux premières réunions test ?
-- Quel groupe Delta Chat est utilisé ?
-- Quel relais Chatmail est acceptable pour le pilote ?
-- Où les relevés validés sont-ils archivés ?
-- Quelle personne assure l’accompagnement et recueille les difficultés ?
-- Quel protocole appliquer en cas de perte d’un appareil ou de départ d’un membre ?
+## Synchronisation et chiffrement
 
-## Gouvernance et décisions
-
-- Le module doit-il rester neutre ou guider une méthode particulière ?
-- Quels statuts sont compréhensibles sans formation ?
-- Faut-il distinguer consentement, vote majoritaire et décision du bureau ?
-- Une objection doit-elle être du texte libre ou une entité structurée ?
-- Qui peut déclarer une proposition adoptée ?
-- Comment corriger une décision saisie par erreur sans effacer l’historique ?
+- Faut-il chiffrer les documents côté client avant stockage sur Verger Sync ?
+- Comment gérer les clés si un membre perd tous ses appareils ?
+- Quel niveau de métadonnées serveur est acceptable ?
+- Quel test de concurrence multi-appareils bloque une version ?
+- Faut-il ajouter un transport pair-à-pair en complément du WebSocket ?
 
 ## Données et exports
 
-- Le Markdown et le JSON suffisent-ils pour le pilote ?
-- Faut-il ajouter PDF, ODT, CSV ou ICS ?
-- Quel identifiant relie un relevé de travail à son archive officielle ?
-- Combien de temps garder les instances et leurs mises à jour ?
-- Quels champs sont strictement interdits dans le module ?
+- Quels champs membre sont réellement nécessaires ?
+- Quels champs doivent être interdits dans le Verger sans module spécialisé ?
+- Quels exports après JSON : Markdown, PDF, ICS, CSV ?
+- Comment identifier un relevé validé et son archive officielle ?
+- Quelle durée d’historique conserver ?
 
-## Synchronisation
+## Intégrations
 
-- La fusion champ par champ est-elle suffisante pour 4 à 7 personnes ?
-- Faut-il adopter une bibliothèque CRDT après le prototype ?
-- Comment rendre visibles deux modifications concurrentes plutôt que d’en masquer une ?
-- Quels tests multi-appareils doivent bloquer une version ?
+- Le premier connecteur réel doit-il viser Paheko, Hitobito ou aucun des deux ?
+- Comment importer un scrutin Mieux Voter sans ressaisie ?
+- Quel format d’export agrégé demander/proposer en amont ?
+- Quelle intégration avec Communication libre apporte une valeur réelle sans recréer une dépendance ?
 
-## Robots et Hitobito
+## Produit
 
-- Quel besoin réel justifie le premier robot ?
-- Lecture seule ou écriture dans Hitobito ?
-- Quelle technologie minimise la maintenance ?
-- Où héberger le robot et ses secrets ?
-- Quelles traces techniques sont indispensables, et pendant combien de temps ?
-- Comment annoncer clairement la présence du robot dans chaque groupe ?
-
-## Produit et accompagnement
-
-- Le nom « Verger Associations » est-il conservé ?
-- Le premier module a-t-il un nom autonome ?
-- Quelle part relève du logiciel libre et quelle part de l’accompagnement du Potager du Web ?
-- Quel niveau de support une petite association peut-elle réellement financer ?
-- Quels critères permettent de décider qu’un second module peut commencer ?
+- Le nom « Verger Associations » est-il conservé pour l’application installée ?
+- Quelle identité graphique finale ?
+- Quel niveau de support peut être proposé sans rendre le produit dépendant d’un accompagnement permanent ?
+- Quels modules doivent réellement être présents avant de parler de première version stable ?

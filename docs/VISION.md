@@ -2,16 +2,13 @@
 
 ## Problème
 
-Les petites associations et coopératives utilisent souvent une accumulation d’outils séparés : messagerie propriétaire, formulaires, tableaux de tâches, agendas et espaces documentaires. Cela multiplie les comptes, les notifications, les données hébergées et les dépendances.
+Les petites associations et coopératives utilisent souvent une accumulation d’outils séparés : messagerie, formulaires, tâches, agendas, votes, annuaire et espaces documentaires. Cela multiplie les comptes, notifications, données hébergées et dépendances.
 
 ## Proposition
 
-Verger Associations vise une suite modulaire qui s’appuie sur des briques libres existantes :
+Verger Associations vise une **application unique, modulaire et local-first**, construite à partir de briques libres existantes mais sans imposer ces briques comme autant d’applications visibles par l’utilisateur.
 
-- Chatmail et Delta Chat pour communiquer ;
-- Webxdc pour collaborer directement dans les conversations ;
-- Hitobito ou un back-office équivalent pour les données officielles ;
-- des robots sobres pour relier les briques lorsqu’une automatisation est nécessaire.
+La PWA doit permettre de travailler hors ligne puis de synchroniser lorsque le réseau revient.
 
 ## Publics prioritaires
 
@@ -19,27 +16,29 @@ Verger Associations vise une suite modulaire qui s’appuie sur des briques libr
 - collectifs locaux ;
 - SCOP et SCIC ;
 - réseaux d’entraide ;
-- structures engagées sans équipe numérique complète.
+- structures sans équipe numérique complète.
 
 ## Valeur apportée
 
-- moins de comptes et de plateformes ;
-- outils utilisables sur téléphone et ordinateur ;
-- fonctionnement local ou hors ligne lorsque possible ;
-- chiffrement de bout en bout des échanges ;
-- outils adaptables sans reconstruire une messagerie ;
-- accompagnement humain et réversibilité.
+- une seule interface ;
+- peu de comptes et de dépendances ;
+- téléphone et ordinateur ;
+- fonctionnement hors ligne ;
+- auto-hébergement possible ;
+- réutilisation de standards et projets libres ;
+- exports et réversibilité ;
+- accompagnement humain sans enfermement propriétaire.
 
 ## Répartition des rôles
 
-- **Le Verger du Numérique** édite et documente les logiciels libres.
+- **Le Verger du Numérique** édite et documente le logiciel libre.
 - **Le Potager du Web** peut assurer audit, installation, configuration, personnalisation, formation, hébergement et maintenance.
 
 ## Hors périmètre initial
 
-- recréer un client de messagerie complet ;
-- remplacer la comptabilité ;
-- conserver des archives juridiques uniquement dans Chatmail ;
-- créer un réseau social public ;
-- ouvrir immédiatement un grand relais public ;
-- développer tous les modules avant d’avoir testé le premier.
+- recréer une messagerie et visioconférence complètes ;
+- remplacer toute la comptabilité ;
+- vote juridiquement certifié ;
+- stockage de données sensibles sans modèle de droits adapté ;
+- service multi-tenant avant authentification et isolation suffisantes ;
+- développer tous les modules avant validation du socle.

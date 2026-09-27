@@ -1,0 +1,18 @@
+{
+  "name": "Verger Associations",
+  "short_name": "Verger",
+  "description": "Suite associative libre, sobre et local-first.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f6f8f3",
+  "theme_color": "#315f3a",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

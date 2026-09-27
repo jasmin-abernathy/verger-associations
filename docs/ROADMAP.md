@@ -1,49 +1,71 @@
 # Feuille de route
 
-## Avancement global : 50 %
+## Avancement global vers un premier pilote autonome : 40 %
 
-Ce pourcentage mesure la progression vers un premier pilote utilisable, pas la maturité d’un produit commercial.
+Le pourcentage a été recalibré lors du pivot v0.3 : le prototype Webxdc a validé le métier, mais le produit cible devient désormais une PWA autonome. La baisse apparente ne signifie pas que le travail v0.2 est perdu : son modèle et ses tests servent de référence de migration.
 
-- [x] **0–15 % — Cadrage initial**
-  - dépôt, vision, architecture et modules documentés ;
-  - premier pilote associatif envisagé.
+- [x] **0–15 % — Cadrage et validation métier**
+  - vision, licence et principes documentés ;
+  - premier cycle Réunion → décision → action validé dans le prototype Webxdc ;
+  - limites de Delta Chat/Webxdc identifiées.
 
-- [ ] **15–30 % — Validation du besoin**
-  - [ ] interroger les responsables et participants d’un premier collectif pilote ;
-  - [ ] tester Delta Chat sans développement ;
-  - [x] examiner le format et les API Webxdc ;
-  - [ ] comparer les mini-apps existantes ;
-  - [x] choisir et appliquer la licence du projet : AGPL-3.0-only.
+- [x] **15–30 % — Nouveau socle local-first**
+  - [x] choisir Automerge Repo comme CRDT ;
+  - [x] créer la PWA autonome ;
+  - [x] stockage local IndexedDB ;
+  - [x] navigation commune ;
+  - [x] export/import portable ;
+  - [x] service worker et manifeste PWA ;
+  - [x] créer un pair de synchronisation WebSocket facultatif ;
+  - [x] ajouter une protection minimale du serveur par jeton.
 
-- [ ] **30–55 % — Prototype**
-  - [x] construire le parcours complet « Réunions et décisions » ;
-  - [x] gérer propositions, contributions, décisions, révisions et actions ;
-  - [x] conserver les corrections par archivage réversible ;
-  - [x] produire et vérifier automatiquement le fichier `.xdc` ;
-  - [x] exporter en Markdown et JSON versionné ;
-  - [x] tester automatiquement le rejeu, les entrées invalides et la convergence ;
-  - [x] distinguer les modifications de plusieurs appareils appartenant au même participant ;
-  - [ ] tester plusieurs participants et appareils réels ;
-  - [ ] vérifier la navigation clavier et le zoom à 200 % dans Delta Chat.
+- [ ] **30–55 % — Parité métier et build reproductible**
+  - [x] membres ;
+  - [x] réunions et ordre du jour ;
+  - [x] propositions et contributions ;
+  - [x] décisions et méthode structurée ;
+  - [x] actions ;
+  - [x] événements simples ;
+  - [x] besoins bénévoles simples ;
+  - [x] tests du domaine sans dépendance réseau ;
+  - [ ] installer les dépendances npm et produire le premier build PWA ;
+  - [ ] vérifier le bundle Automerge/WASM hors ligne ;
+  - [ ] tester deux onglets puis deux appareils ;
+  - [ ] importer les données utiles d’un export v0.2 ;
+  - [ ] rétablir l’export Markdown du relevé de réunion dans la PWA ;
+  - [ ] tester clavier, zoom 200 % et lecteur d’écran.
 
-- [ ] **55–75 % — Pilote associatif**
-  - installer le groupe ;
+- [ ] **55–75 % — Pilote autonome**
+  - déployer la PWA sur un hébergement pilote ;
+  - déployer Verger Sync derrière TLS ;
   - accompagner 4 à 7 participants ;
   - conduire au moins deux réunions réelles ;
-  - recueillir les blocages et usages.
+  - tester le travail hors ligne puis la resynchronisation ;
+  - recueillir les blocages et demandes.
 
-- [ ] **75–90 % — Intégration**
-  - décider si un robot Hitobito est nécessaire ;
-  - développer uniquement les rappels validés ;
-  - documenter la maintenance et la confidentialité.
+- [ ] **75–90 % — Sécurité et intégrations**
+  - remplacer le jeton partagé par comptes/invitations/révocation ;
+  - définir les permissions minimales ;
+  - intégrer le résultat agrégé Mieux Voter ;
+  - choisir un premier connecteur réel Paheko/Hitobito seulement si le pilote le demande ;
+  - sauvegardes serveur et restauration documentées.
 
 - [ ] **90–100 % — Première version réutilisable**
   - corriger le pilote ;
-  - stabiliser les formats d’export ;
-  - [x] choisir et appliquer la licence ;
+  - stabiliser le schéma et les exports ;
+  - ajouter les modules réellement demandés ;
   - publier la documentation d’installation ;
   - préparer l’offre d’accompagnement du Potager du Web.
 
 ## Prochaine étape concrète
 
-Utiliser le paquet `dist/reunions-decisions.xdc` à jour, l’envoyer dans un groupe Delta Chat de test et exécuter le scénario avec deux personnes puis avec un même participant sur deux appareils avant le premier pilote associatif.
+Construire `apps/verger-pwa` avec ses dépendances Automerge, corriger les éventuels écarts d’API au build, puis exécuter le scénario suivant :
+
+1. créer une association ;
+2. ajouter deux membres ;
+3. créer une réunion et une proposition ;
+4. ajouter une objection depuis un second client ;
+5. enregistrer une décision ;
+6. créer une action ;
+7. couper le réseau sur un client, modifier des données des deux côtés, reconnecter et vérifier la convergence ;
+8. exporter puis réimporter une sauvegarde JSON.

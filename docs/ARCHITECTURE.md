@@ -1,46 +1,25 @@
 # Architecture
 
-## Principe directeur
+> **Historique :** l’architecture Delta Chat / Webxdc décrite dans les premières versions a servi au prototype v0.2. Depuis le pivot v0.3, l’architecture cible est la PWA local-first décrite dans [`ARCHITECTURE-V03.md`](ARCHITECTURE-V03.md).
 
-Chaque donnée doit être conservée dans la brique la plus adaptée à sa durée de vie et à sa valeur juridique.
-
-| Brique | Responsabilité |
-|---|---|
-| Hitobito / back-office | Membres, rôles, cotisations, événements officiels, données administratives |
-| Chatmail / Delta Chat | Messages, groupes, canaux, fichiers échangés et notifications |
-| Webxdc | État collaboratif d’un petit outil partagé dans une conversation |
-| Robot Chatmail | Rappels, alertes et synchronisations explicites avec un service externe |
-| Site public | Présentation, dons, inscriptions externes et contenus publics |
-| Stockage documentaire | Archives, statuts, procès-verbaux validés et pièces durables |
-
-## Schéma fonctionnel
+## Architecture cible
 
 ```mermaid
 flowchart TD
-    H["Hitobito / back-office"] <--> B["Robot d’intégration"]
-    B <--> C["Chatmail / Delta Chat"]
-    C <--> W["Mini-apps Webxdc"]
-    S["Site public"] --> H
-    C --> A["Export / archives validées"]
+    U["PWA Verger Associations"] --> L["Automerge Repo"]
+    L --> I["IndexedDB local"]
+    L --> B["BroadcastChannel"]
+    L -. facultatif .-> S["Verger Sync / WebSocket"]
+    U -. connecteur futur .-> P["Paheko / Hitobito"]
+    U -. intégration .-> M["Mieux Voter"]
+    U -. interopérabilité .-> C["Communication libre"]
+    U --> E["Exports portables / archives"]
 ```
 
-## Flux type : rappel d’événement
+## Principe directeur
 
-1. Hitobito contient l’événement officiel.
-2. Le robot détecte une échéance.
-3. Le robot publie le rappel dans le groupe concerné.
-4. Une mini-app Webxdc recueille disponibilités ou répartition des rôles.
-5. Le résultat utile est exporté ou, si nécessaire, retransmis au back-office.
+Le produit doit continuer à fonctionner sans disponibilité permanente du serveur. Les services externes enrichissent Verger mais ne conditionnent pas ses fonctions métier principales.
 
-## Point de jonction avec Communication libre
+## Héritage du prototype
 
-[Communication libre](https://github.com/jasmin-abernathy/communication-libre) prend en charge, dans son propre POC, les comptes, salons, appels, hébergement et exploitation de Matrix/Element et Jitsi. Verger Associations conserve la responsabilité des processus associatifs et de leurs exports ; son module actuel reste lié à Delta Chat/Webxdc.
-
-Le contrat d'échange minimal est un **relevé validé exportable** en Markdown et un JSON versionné, conservés dans le stockage officiel de l'association. Ce contrat n'implique ni synchronisation automatique, ni accès de Webxdc à Matrix, ni comptes communs. Une interface pour un autre canal sera étudiée seulement si un pilote en démontre le besoin.
-
-## Contraintes
-
-- Une mini-app Webxdc ne doit pas dépendre d’un accès direct à Internet.
-- Un robot est un participant technique : il peut accéder au contenu qui lui est adressé.
-- Le relais Chatmail transporte les messages de manière éphémère ; il ne remplace pas une politique d’archivage.
-- Les fonctionnalités essentielles doivent rester compréhensibles sans jargon technique.
+Le prototype Webxdc reste présent dans `apps/reunions-decisions` jusqu’à parité fonctionnelle. Il ne doit pas devenir un second produit maintenu en parallèle.
