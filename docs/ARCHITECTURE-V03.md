@@ -37,6 +37,8 @@ PWA Verger Associations
 
 ### Automerge / Automerge Repo
 
+Version cible du pilote : **2.5.6 stable**, figée dans les `package.json` afin de rendre le premier build reproductible.
+
 Licence MIT.
 
 Responsabilités :
