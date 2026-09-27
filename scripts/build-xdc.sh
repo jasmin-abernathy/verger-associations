@@ -16,4 +16,5 @@ rm -f "$OUTPUT"
 )
 
 unzip -t "$OUTPUT"
+sha256sum "$OUTPUT" > "$OUTPUT.sha256"
 echo "Paquet créé : $OUTPUT"

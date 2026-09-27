@@ -1,6 +1,6 @@
 # Feuille de route
 
-## Avancement global : 47 %
+## Avancement global : 50 %
 
 Ce pourcentage mesure la progression vers un premier pilote utilisable, pas la maturité d’un produit commercial.
 
@@ -22,6 +22,7 @@ Ce pourcentage mesure la progression vers un premier pilote utilisable, pas la m
   - [x] produire et vérifier automatiquement le fichier `.xdc` ;
   - [x] exporter en Markdown et JSON versionné ;
   - [x] tester automatiquement le rejeu, les entrées invalides et la convergence ;
+  - [x] distinguer les modifications de plusieurs appareils appartenant au même participant ;
   - [ ] tester plusieurs participants et appareils réels ;
   - [ ] vérifier la navigation clavier et le zoom à 200 % dans Delta Chat.
 
@@ -45,4 +46,4 @@ Ce pourcentage mesure la progression vers un premier pilote utilisable, pas la m
 
 ## Prochaine étape concrète
 
-Télécharger l’artefact produit par GitHub Actions, l’envoyer dans un groupe Delta Chat de test et exécuter le scénario à deux personnes avant le premier pilote associatif.
+Utiliser le paquet `dist/reunions-decisions.xdc` à jour, l’envoyer dans un groupe Delta Chat de test et exécuter le scénario avec deux personnes puis avec un même participant sur deux appareils avant le premier pilote associatif.

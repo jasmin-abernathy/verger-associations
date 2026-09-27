@@ -43,7 +43,7 @@ Le paquet est écrit dans `dist/reunions-decisions.xdc`. Le simulateur local n�
 
 ## Tester dans Delta Chat
 
-1. télécharger l’artefact `reunions-decisions-xdc` produit par GitHub Actions ;
+1. utiliser le `dist/reunions-decisions.xdc` à jour ou le reconstruire localement ;
 2. envoyer le fichier `.xdc` dans « Messages enregistrés » ou un groupe de test ;
 3. toucher « Démarrer » ;
 4. suivre les cinq étapes affichées dans l’application ;
@@ -61,6 +61,6 @@ Les mises à jour du prototype 0.1 sont encore comprises. Le relevé reste un do
 - pas de vote secret ni de garantie d’anonymat ;
 - pas de signature électronique ;
 - pas de pièces jointes ni de lien Hitobito ;
-- fusion champ par champ : deux modifications simultanées du même texte peuvent se départager sans présenter un écran de conflit ;
+- fusion champ par champ : deux modifications simultanées du même texte peuvent se départager sans présenter un écran de conflit ; l’identité logique distingue désormais les appareils d’un même participant ;
 - aucun droit particulier n’empêche un participant de changer un statut ;
 - validation sur appareils réels encore nécessaire avant de qualifier la version de stable.
