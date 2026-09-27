@@ -58,13 +58,25 @@ Les modules partagent désormais **le même document métier**. Ils ne doivent p
 - clôture et réouverture ;
 - mise en relation automatisée reportée.
 
+## Socle v0.4 — deuxième lot
+
+### Qualité des données existantes
+
+- édition des membres sans changer leur identifiant ;
+- édition des actions sans casser leurs liens réunion/décision ;
+- édition des événements ;
+- édition des annonces d’entraide ;
+- archivage et restauration des éléments courants.
+
+### Consultations (première version)
+
+- une question textuelle ;
+- réponses **nominatives uniquement** ;
+- clôture et réouverture ;
+- archivage/restauration ;
+- aucune promesse d’anonymat : les réponses vivent dans le document Automerge partagé et son historique.
+
 ## Priorité suivante
-
-### Consultations
-
-- questionnaire ;
-- choix du caractère nominatif/anonyme ;
-- synthèse exportable.
 
 ### Signalements
 

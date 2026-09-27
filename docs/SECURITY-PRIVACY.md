@@ -68,6 +68,8 @@ Les membres sont volontairement limités à un nom, rôle et contact facultatif 
 
 Les annonces d'entraide et leurs coordonnées facultatives sont visibles par toutes les personnes ayant accès au document commun. L'accueil des membres est également une liste partagée, sans documents joints ni transmission automatisée.
 
+Les consultations du socle v0.4 sont **explicitement nominatives**. Le nom et la réponse sont enregistrés dans le document partagé et peuvent subsister dans l’historique Automerge même après archivage. Une consultation nécessitant un anonymat réel doit utiliser un protocole distinct, conçu et audité pour cet usage.
+
 ## Dépendances
 
 Les dépendances Automerge sont embarquées au build. La PWA publiée ne doit pas charger de JavaScript métier depuis un CDN tiers.

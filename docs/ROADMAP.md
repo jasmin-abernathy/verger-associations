@@ -1,6 +1,6 @@
 # Feuille de route
 
-## Avancement global vers un premier pilote autonome : 40 %
+## Avancement global vers un premier pilote autonome : 50 %
 
 Le pourcentage a été recalibré lors du pivot v0.3 : le prototype Webxdc a validé le métier, mais le produit cible devient désormais une PWA autonome. La baisse apparente ne signifie pas que le travail v0.2 est perdu : son modèle et ses tests servent de référence de migration.
 
@@ -28,11 +28,15 @@ Le pourcentage a été recalibré lors du pivot v0.3 : le prototype Webxdc a val
   - [x] événements simples ;
   - [x] besoins bénévoles simples ;
   - [x] tests du domaine sans dépendance réseau ;
-  - [ ] installer les dépendances npm et produire le premier build PWA ;
-  - [ ] vérifier le bundle Automerge/WASM hors ligne ;
-  - [ ] tester deux onglets puis deux appareils ;
+  - [x] installer les dépendances npm et produire le premier build PWA ;
+  - [x] vérifier que le build produit et met en cache les ressources JS/CSS/WASM ;
+  - [ ] vérifier la réouverture réellement hors ligne dans un navigateur ;
+  - [x] tester deux clients Automerge en Node via Verger Sync ;
+  - [ ] tester deux onglets puis deux appareils dans de vrais navigateurs ;
   - [x] importer les données utiles d’un export v0.2 ;
   - [x] rétablir l’export Markdown du relevé de réunion dans la PWA ;
+  - [x] ajouter édition + archivage/restauration des membres, actions, événements et annonces ;
+  - [x] ajouter des consultations nominatives simples ;
   - [ ] tester clavier, zoom 200 % et lecteur d’écran.
 
 - [ ] **55–75 % — Pilote autonome**

@@ -16,6 +16,14 @@ import {
   recordDecision,
   setHelpPostClosed,
   setWelcomeStep,
+  updateMember,
+  updateAction,
+  updateEvent,
+  updateHelpPost,
+  setArchived,
+  addConsultation,
+  addConsultationResponse,
+  setConsultationClosed,
   ensureState,
 } from "../src/domain.js";
 import { exportMeetingMarkdown, importAnyJson } from "../src/portability.js";
@@ -30,13 +38,39 @@ setHelpPostClosed(doc, help, true);
 assert.equal(doc.helpPosts[help].closed, true);
 assert.throws(() => addHelpPost(doc, { kind: "invalid", title: "Test" }));
 
+updateMember(doc, member, { name: "Alice Dupont", role: "Trésorière", contact: "alice@example.test" });
+assert.equal(doc.members[member].id, member);
+assert.equal(doc.members[member].name, "Alice Dupont");
+
+updateHelpPost(doc, help, { kind: "offer", title: "Covoiturage", details: "Deux places", contact: "Alice" });
+assert.equal(doc.helpPosts[help].id, help);
+assert.equal(doc.helpPosts[help].kind, "offer");
+setArchived(doc, "helpPosts", help, true);
+assert.equal(doc.helpPosts[help].archived, true);
+setArchived(doc, "helpPosts", help, false);
+assert.equal(doc.helpPosts[help].archived, false);
+
+const consultation = addConsultation(doc, { title: "Horaires", question: "Quel créneau préférez-vous ?" });
+const response = addConsultationResponse(doc, consultation, { author: "Alice Dupont", answer: "Le mardi soir" });
+assert.equal(doc.consultations[consultation].responses[response].author, "Alice Dupont");
+setConsultationClosed(doc, consultation, true);
+assert.equal(doc.consultations[consultation].closed, true);
+assert.throws(() => addConsultationResponse(doc, consultation, { author: "Bob", answer: "Mercredi" }));
+setConsultationClosed(doc, consultation, false);
+
 const meeting = addMeeting(doc, { title: "CA septembre", date: "2026-09-27" });
 addAgendaItem(doc, meeting, "Budget");
 const proposal = addProposal(doc, meeting, { title: "Ouvrir une permanence", details: "Une fois par mois" });
 addContribution(doc, meeting, proposal, { type: "objection", text: "Prévoir une rotation", author: "Bob" });
 recordDecision(doc, meeting, proposal, { status: "accepted", method: "consent", text: "Permanence le premier samedi" });
-addAction(doc, { text: "Créer le planning", owner: "Alice", meetingId: meeting, proposalId: proposal });
-addEvent(doc, { title: "Permanence", date: "2026-10-03", location: "Local" });
+const action = addAction(doc, { text: "Créer le planning", owner: "Alice", meetingId: meeting, proposalId: proposal });
+updateAction(doc, action, { text: "Finaliser le planning", owner: "Alice Dupont", due: "2026-10-01" });
+assert.equal(doc.actions[action].id, action);
+assert.equal(doc.actions[action].text, "Finaliser le planning");
+const event = addEvent(doc, { title: "Permanence", date: "2026-10-03", location: "Local" });
+updateEvent(doc, event, { title: "Permanence mensuelle", date: "2026-10-04", location: "Maison des associations" });
+assert.equal(doc.events[event].id, event);
+assert.equal(doc.events[event].title, "Permanence mensuelle");
 addVolunteerNeed(doc, { title: "Tenir l’accueil", slots: 2 });
 
 assert.deepEqual(counts(doc), {
@@ -51,7 +85,7 @@ assert.deepEqual(counts(doc), {
 const markdown = exportMeetingMarkdown(doc, meeting);
 assert.match(markdown, /# CA septembre/);
 assert.match(markdown, /Décision retenue : Permanence le premier samedi/);
-assert.match(markdown, /Créer le planning/);
+assert.match(markdown, /Finaliser le planning/);
 
 const exported = exportPortableJson(doc);
 const imported = importPortableJson(exported);

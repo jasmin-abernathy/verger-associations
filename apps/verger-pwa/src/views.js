@@ -3,7 +3,7 @@ import { empty, escapeHtml as e, formatDate, heading, stat } from "./helpers.js"
 import { meetingCard } from "./meetings.js";
 
 export function renderView(name, state, context) {
-  const renderers = { dashboard, members, welcome, meetings, decisions, actions, events, volunteers, help, more, settings };
+  const renderers = { dashboard, members, welcome, meetings, decisions, actions, events, volunteers, help, consultations, more, settings };
   return renderers[name]?.(state, context) || "";
 }
 
@@ -18,8 +18,9 @@ function dashboard(state) {
 
 function members(state) {
   const list = activeRecords(state.members);
+  const archived = archivedRecords(state.members);
   return `${heading("Membres", "Un annuaire minimal avant de définir des permissions plus fines.")}
-    <div class="grid-2"><article class="card">${list.length ? `<ul class="clean-list">${list.map((m) => `<li><strong>${e(m.name)}</strong><span>${e(m.role || "Membre")}${m.contact ? ` · ${e(m.contact)}` : ""}</span></li>`).join("")}</ul>` : empty("Aucun membre.")}</article>
+    <div class="grid-2"><article class="card"><h2>Membres actifs</h2>${list.length ? `<div class="stack">${list.map((m) => `<article class="subcard"><form data-form="member-edit" data-id="${e(m.id)}" class="form"><label>Nom<input name="name" required maxlength="120" value="${e(m.name)}"></label><label>Rôle<input name="role" maxlength="120" value="${e(m.role || "Membre")}"></label><label>Contact facultatif<input name="contact" maxlength="180" value="${e(m.contact || "")}"></label><div class="button-row"><button>Enregistrer</button><button type="button" class="secondary" data-action="archive-item" data-collection="members" data-id="${e(m.id)}" data-archived="true">Archiver</button></div></form></article>`).join("")}</div>` : empty("Aucun membre.")}${archivedList("Membres archivés", archived, "members", (m) => m.name)}</article>
     <article class="card"><h2>Ajouter</h2><form data-form="member" class="form"><label>Nom<input name="name" required maxlength="120"></label><label>Rôle<input name="role" maxlength="120" value="Membre"></label><label>Contact facultatif<input name="contact" maxlength="180"></label><button>Ajouter le membre</button></form></article></div>`;
 }
 
@@ -45,15 +46,17 @@ function decisions(state) {
 
 function actions(state) {
   const list = activeRecords(state.actions);
+  const archived = archivedRecords(state.actions);
   const meetingsList = activeRecords(state.meetings);
   return `${heading("Actions", "Les suites de réunion et les tâches quotidiennes au même endroit.")}
-    <div class="grid-2"><article class="card">${list.length ? `<ul class="clean-list">${list.map(actionRow).join("")}</ul>` : empty("Aucune action.")}</article>
+    <div class="grid-2"><article class="card"><h2>Actions</h2>${list.length ? `<div class="stack">${list.map((action) => actionEditor(action, state)).join("")}</div>` : empty("Aucune action.")}${archivedList("Actions archivées", archived, "actions", (item) => item.text)}</article>
     <article class="card"><h2>Nouvelle action</h2><form data-form="action" class="form"><label>Action<input name="text" required maxlength="1000"></label><label>Responsable<input name="owner" maxlength="120"></label><label>Échéance<input name="due" type="date"></label><label>Réunion liée<select name="meetingId"><option value="">Aucune</option>${meetingsList.map((m) => `<option value="${e(m.id)}">${e(m.title)}</option>`).join("")}</select></label><input type="hidden" name="proposalId" value=""><button>Ajouter</button></form></article></div>`;
 }
 
 function events(state) {
   const list = activeRecords(state.events).reverse();
-  return `${heading("Événements", "Dates et informations pratiques, sans calendrier externe obligatoire.")}<div class="grid-2"><article class="card">${list.length ? `<ul class="clean-list">${list.map((item) => `<li><strong>${e(item.title)}</strong><span>${formatDate(item.date)}${item.location ? ` · ${e(item.location)}` : ""}</span></li>`).join("")}</ul>` : empty("Aucun événement.")}</article><article class="card"><h2>Ajouter</h2><form data-form="event" class="form"><label>Titre<input name="title" required maxlength="180"></label><label>Date<input name="date" type="date"></label><label>Lieu<input name="location" maxlength="240"></label><button>Créer l’événement</button></form></article></div>`;
+  const archived = archivedRecords(state.events);
+  return `${heading("Événements", "Dates et informations pratiques, sans calendrier externe obligatoire.")}<div class="grid-2"><article class="card"><h2>Événements</h2>${list.length ? `<div class="stack">${list.map((item) => `<article class="subcard"><form data-form="event-edit" data-id="${e(item.id)}" class="form"><label>Titre<input name="title" required maxlength="180" value="${e(item.title)}"></label><label>Date<input name="date" type="date" value="${e(item.date || "")}"></label><label>Lieu<input name="location" maxlength="240" value="${e(item.location || "")}"></label><div class="button-row"><button>Enregistrer</button><button type="button" class="secondary" data-action="archive-item" data-collection="events" data-id="${e(item.id)}" data-archived="true">Archiver</button></div></form></article>`).join("")}</div>` : empty("Aucun événement.")}${archivedList("Événements archivés", archived, "events", (item) => item.title)}</article><article class="card"><h2>Ajouter</h2><form data-form="event" class="form"><label>Titre<input name="title" required maxlength="180"></label><label>Date<input name="date" type="date"></label><label>Lieu<input name="location" maxlength="240"></label><button>Créer l’événement</button></form></article></div>`;
 }
 
 function volunteers(state) {
@@ -64,15 +67,25 @@ function volunteers(state) {
 
 function help(state) {
   const posts = activeRecords(state.helpPosts || {}).reverse();
+  const archived = archivedRecords(state.helpPosts || {});
   return `${heading("Entraide", "Partager une demande ou une proposition d’aide au sein de l’association.")}
     <p class="muted">Les annonces et leurs coordonnées sont visibles par toutes les personnes ayant accès à cet espace.</p>
-    <div class="grid-2"><article class="card"><h2>Annonces</h2>${posts.length ? `<ul class="clean-list">${posts.map((post) => `<li><strong>${post.kind === "offer" ? "Offre" : "Demande"} · ${e(post.title)}</strong><span>${post.closed ? "Clôturée" : "Ouverte"}${post.contact ? ` · Contact : ${e(post.contact)}` : ""}</span>${post.details ? `<p>${e(post.details)}</p>` : ""}<button type="button" class="text-button" data-action="toggle-help" data-id="${e(post.id)}" data-closed="${!post.closed}">${post.closed ? "Rouvrir" : "Clôturer"}</button></li>`).join("")}</ul>` : empty("Aucune annonce.")}</article>
+    <div class="grid-2"><article class="card"><h2>Annonces</h2>${posts.length ? `<div class="stack">${posts.map((post) => `<article class="subcard"><form data-form="help-edit" data-id="${e(post.id)}" class="form"><label>Type<select name="kind"><option value="request" ${post.kind === "request" ? "selected" : ""}>Demande</option><option value="offer" ${post.kind === "offer" ? "selected" : ""}>Offre</option></select></label><label>Titre<input name="title" required maxlength="240" value="${e(post.title)}"></label><label>Précisions<textarea name="details" maxlength="2000" rows="3">${e(post.details || "")}</textarea></label><label>Contact facultatif<input name="contact" maxlength="180" value="${e(post.contact || "")}"></label><span class="muted">${post.closed ? "Clôturée" : "Ouverte"}</span><div class="button-row"><button>Enregistrer</button><button type="button" class="secondary" data-action="toggle-help" data-id="${e(post.id)}" data-closed="${!post.closed}">${post.closed ? "Rouvrir" : "Clôturer"}</button><button type="button" class="secondary" data-action="archive-item" data-collection="helpPosts" data-id="${e(post.id)}" data-archived="true">Archiver</button></div></form></article>`).join("")}</div>` : empty("Aucune annonce.")}${archivedList("Annonces archivées", archived, "helpPosts", (item) => item.title)}</article>
     <article class="card"><h2>Nouvelle annonce</h2><form data-form="help" class="form"><label>Type<select name="kind"><option value="request">Demande</option><option value="offer">Offre</option></select></label><label>Titre<input name="title" required maxlength="240"></label><label>Précisions<textarea name="details" maxlength="2000" rows="4"></textarea></label><label>Contact facultatif<input name="contact" maxlength="180"></label><button>Publier dans l’association</button></form></article></div>`;
+}
+
+function consultations(state) {
+  const list = activeRecords(state.consultations || {}).reverse();
+  const archived = archivedRecords(state.consultations || {});
+  return `${heading("Consultations", "Questions nominatives simples, visibles par les personnes ayant accès à l’association.")}
+    <p class="warning"><strong>Pas d’anonymat :</strong> le nom et la réponse sont enregistrés dans le document partagé et son historique. Pour une consultation anonyme, utiliser plus tard un protocole séparé et audité.</p>
+    <div class="grid-2"><article class="card"><h2>Consultations</h2>${list.length ? `<div class="stack">${list.map((item) => consultationCard(item)).join("")}</div>` : empty("Aucune consultation.")}${archivedList("Consultations archivées", archived, "consultations", (item) => item.title)}</article>
+    <article class="card"><h2>Nouvelle consultation</h2><form data-form="consultation" class="form"><label>Titre<input name="title" required maxlength="240"></label><label>Question<textarea name="question" required maxlength="2000" rows="4"></textarea></label><button>Ouvrir la consultation</button></form></article></div>`;
 }
 
 function more() {
   return `${heading("Autres modules", "Le socle est prêt à accueillir les fonctions validées par le pilote.")}<div class="module-grid">${[
-    ["Consultations","Questionnaires nominatifs ou anonymes."],["Signalements","Remontée et suivi d’un problème."],["Alertes","Qualification d’alertes externes."],["Jugement majoritaire","Urne Mieux Voter puis import du résultat agrégé."],
+    ["Signalements","Remontée et suivi d’un problème."],["Alertes","Qualification d’alertes externes."],["Jugement majoritaire","Urne Mieux Voter puis import du résultat agrégé."],
   ].map(([title,text]) => `<article class="card"><span class="badge">À venir</span><h2>${title}</h2><p>${text}</p></article>`).join("")}</div>`;
 }
 
@@ -84,6 +97,33 @@ function settings(state, context) {
       <article class="card"><h2>Synchronisation expérimentale</h2><form data-form="sync" class="form"><label>URL WebSocket<input name="url" type="url" placeholder="wss://sync.exemple.fr/sync" value="${e(context.syncUrl)}"></label><label>Jeton<input name="token" type="password" autocomplete="off" value="${e(context.syncToken)}"></label><button>Enregistrer la synchro</button></form><p class="warning">Le jeton partagé protège le pilote, mais ne remplace pas encore des comptes individuels.</p></article>
       <article class="card"><h2>État technique</h2><dl class="tech"><dt>Document</dt><dd><code>${e(context.docUrl)}</code></dd><dt>Stockage</dt><dd>IndexedDB local</dd><dt>Conflits</dt><dd>Automerge CRDT</dd><dt>Réseau</dt><dd>${context.syncUrl ? "Local + WebSocket" : "Local uniquement"}</dd></dl></article>
     </div>`;
+}
+
+function archivedRecords(map = {}) {
+  return Object.values(map)
+    .filter((item) => item?.archived)
+    .sort((a, b) => String(b.updatedAt || b.createdAt || "").localeCompare(String(a.updatedAt || a.createdAt || "")));
+}
+
+function archivedList(title, items, collection, label) {
+  if (!items.length) return "";
+  return `<details class="archive-box"><summary>${e(title)} (${items.length})</summary><ul class="clean-list">${items.map((item) => `<li><strong>${e(label(item))}</strong><button type="button" class="text-button" data-action="archive-item" data-collection="${e(collection)}" data-id="${e(item.id)}" data-archived="false">Restaurer</button></li>`).join("")}</ul></details>`;
+}
+
+function actionEditor(action, state) {
+  const meeting = state.meetings?.[action.meetingId];
+  let proposal = null;
+  if (meeting && action.proposalId) proposal = meeting.proposals?.[action.proposalId];
+  const context = [
+    meeting?.title && `Réunion : ${meeting.title}`,
+    proposal?.title && `Décision : ${proposal.title}`,
+  ].filter(Boolean).join(" · ");
+  return `<article class="subcard"><div class="check-row"><input type="checkbox" ${action.done ? "checked" : ""} data-toggle-action="${e(action.id)}" aria-label="Marquer ${e(action.text)} comme terminée"><div><strong class="${action.done ? "done" : ""}">${e(action.text)}</strong>${context ? `<span>${e(context)}</span>` : ""}</div></div><details><summary>Modifier</summary><form data-form="action-edit" data-id="${e(action.id)}" class="form"><label>Action<input name="text" required maxlength="1000" value="${e(action.text)}"></label><label>Responsable<input name="owner" maxlength="120" value="${e(action.owner || "")}"></label><label>Échéance<input name="due" type="date" value="${e(action.due || "")}"></label><div class="button-row"><button>Enregistrer</button><button type="button" class="secondary" data-action="archive-item" data-collection="actions" data-id="${e(action.id)}" data-archived="true">Archiver</button></div></form></details></article>`;
+}
+
+function consultationCard(item) {
+  const responses = activeRecords(item.responses || {});
+  return `<article class="subcard"><div class="card-head"><div><h3>${e(item.title)}</h3><p>${e(item.question)}</p></div><span class="badge">${item.closed ? "Clôturée" : "Ouverte"}</span></div><h4>Réponses nominatives (${responses.length})</h4>${responses.length ? `<ul class="clean-list">${responses.map((response) => `<li><strong>${e(response.author)}</strong><span>${e(response.answer)}</span></li>`).join("")}</ul>` : empty("Aucune réponse.")}${item.closed ? "" : `<form data-form="consultation-response" data-id="${e(item.id)}" class="form"><label>Votre nom<input name="author" required maxlength="120"></label><label>Réponse<textarea name="answer" required maxlength="4000" rows="3"></textarea></label><button>Répondre nominativement</button></form>`}<div class="button-row"><button type="button" class="secondary" data-action="toggle-consultation" data-id="${e(item.id)}" data-closed="${!item.closed}">${item.closed ? "Rouvrir" : "Clôturer"}</button><button type="button" class="secondary" data-action="archive-item" data-collection="consultations" data-id="${e(item.id)}" data-archived="true">Archiver</button></div></article>`;
 }
 
 function actionRow(action) {

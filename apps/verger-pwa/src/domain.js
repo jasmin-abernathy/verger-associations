@@ -129,6 +129,116 @@ export function setHelpPostClosed(doc, id, closed) {
   touch(doc);
 }
 
+export function updateMember(doc, memberId, { name, role = "Membre", contact = "" }) {
+  const member = doc.members?.[memberId];
+  if (!member) throw new Error("Membre introuvable");
+  const trimmed = String(name || "").trim();
+  if (!trimmed) throw new Error("Le nom du membre est obligatoire");
+  member.name = trimmed.slice(0, 120);
+  member.role = String(role || "Membre").trim().slice(0, 120);
+  member.contact = String(contact || "").trim().slice(0, 180);
+  member.updatedAt = new Date().toISOString();
+  touch(doc);
+  return memberId;
+}
+
+export function setArchived(doc, collection, id, archived) {
+  const allowed = ["members", "meetings", "actions", "events", "volunteerNeeds", "helpPosts", "consultations"];
+  if (!allowed.includes(collection)) throw new Error("Collection non archivable");
+  const item = doc[collection]?.[id];
+  if (!item) throw new Error("Élément introuvable");
+  item.archived = Boolean(archived);
+  item.updatedAt = new Date().toISOString();
+  touch(doc);
+}
+
+export function updateAction(doc, actionId, { text, owner = "", due = "" }) {
+  const action = doc.actions?.[actionId];
+  if (!action) throw new Error("Action introuvable");
+  const trimmed = String(text || "").trim();
+  if (!trimmed) throw new Error("L’action est obligatoire");
+  action.text = trimmed.slice(0, 1000);
+  action.owner = String(owner || "").trim().slice(0, 120);
+  action.due = String(due || "").slice(0, 10);
+  action.updatedAt = new Date().toISOString();
+  touch(doc);
+  return actionId;
+}
+
+export function updateEvent(doc, eventId, { title, date = "", location = "" }) {
+  const event = doc.events?.[eventId];
+  if (!event) throw new Error("Événement introuvable");
+  const trimmed = String(title || "").trim();
+  if (!trimmed) throw new Error("Le titre de l’événement est obligatoire");
+  event.title = trimmed.slice(0, 180);
+  event.date = String(date || "").slice(0, 10);
+  event.location = String(location || "").trim().slice(0, 240);
+  event.updatedAt = new Date().toISOString();
+  touch(doc);
+  return eventId;
+}
+
+export function updateHelpPost(doc, postId, { kind, title, details = "", contact = "" }) {
+  const post = doc.helpPosts?.[postId];
+  if (!post) throw new Error("Annonce introuvable");
+  if (!["request", "offer"].includes(kind)) throw new Error("Type d’entraide invalide");
+  const trimmed = String(title || "").trim();
+  if (!trimmed) throw new Error("Un titre est obligatoire");
+  post.kind = kind;
+  post.title = trimmed.slice(0, 240);
+  post.details = String(details || "").trim().slice(0, 2000);
+  post.contact = String(contact || "").trim().slice(0, 180);
+  post.updatedAt = new Date().toISOString();
+  touch(doc);
+  return postId;
+}
+
+export function addConsultation(doc, { title, question }) {
+  const consultationTitle = String(title || "").trim();
+  const consultationQuestion = String(question || "").trim();
+  if (!consultationTitle) throw new Error("Le titre de la consultation est obligatoire");
+  if (!consultationQuestion) throw new Error("La question est obligatoire");
+  const id = newId("consultation");
+  doc.consultations[id] = {
+    id,
+    title: consultationTitle.slice(0, 240),
+    question: consultationQuestion.slice(0, 2000),
+    responses: {},
+    closed: false,
+    archived: false,
+    createdAt: new Date().toISOString(),
+  };
+  touch(doc);
+  return id;
+}
+
+export function addConsultationResponse(doc, consultationId, { author, answer }) {
+  const consultation = doc.consultations?.[consultationId];
+  if (!consultation || consultation.archived) throw new Error("Consultation introuvable");
+  if (consultation.closed) throw new Error("Cette consultation est clôturée");
+  const responseAuthor = String(author || "").trim();
+  const responseAnswer = String(answer || "").trim();
+  if (!responseAuthor) throw new Error("Le nom du répondant est obligatoire");
+  if (!responseAnswer) throw new Error("La réponse est obligatoire");
+  const id = newId("response");
+  consultation.responses[id] = {
+    id,
+    author: responseAuthor.slice(0, 120),
+    answer: responseAnswer.slice(0, 4000),
+    createdAt: new Date().toISOString(),
+  };
+  touch(doc);
+  return id;
+}
+
+export function setConsultationClosed(doc, consultationId, closed) {
+  const consultation = doc.consultations?.[consultationId];
+  if (!consultation || consultation.archived) throw new Error("Consultation introuvable");
+  consultation.closed = Boolean(closed);
+  consultation.updatedAt = new Date().toISOString();
+  touch(doc);
+}
+
 export function addMeeting(doc, { title, date = "" }) {
   const trimmed = String(title || "").trim();
   if (!trimmed) throw new Error("Le titre de la réunion est obligatoire");

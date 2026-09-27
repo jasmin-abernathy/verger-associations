@@ -8,10 +8,18 @@ import {
   addMember,
   addProposal,
   addVolunteerNeed,
+  addConsultation,
+  addConsultationResponse,
   exportPortableJson,
   recordDecision,
+  setArchived,
+  setConsultationClosed,
   setHelpPostClosed,
   setWelcomeStep,
+  updateAction,
+  updateEvent,
+  updateHelpPost,
+  updateMember,
 } from "./domain.js";
 import { slug } from "./helpers.js";
 import { exportMeetingMarkdown, importAnyJson } from "./portability.js";
@@ -95,6 +103,9 @@ function handleForm(form) {
     case "member":
       mutate((doc) => addMember(doc, values), "Membre ajouté");
       break;
+    case "member-edit":
+      mutate((doc) => updateMember(doc, form.dataset.id, values), "Membre mis à jour");
+      break;
     case "meeting":
       mutate((doc) => addMeeting(doc, values), "Réunion créée");
       break;
@@ -113,14 +124,29 @@ function handleForm(form) {
     case "action":
       mutate((doc) => addAction(doc, { ...values, meetingId, proposalId }), "Action ajoutée");
       break;
+    case "action-edit":
+      mutate((doc) => updateAction(doc, form.dataset.id, values), "Action mise à jour");
+      break;
     case "event":
       mutate((doc) => addEvent(doc, values), "Événement créé");
+      break;
+    case "event-edit":
+      mutate((doc) => updateEvent(doc, form.dataset.id, values), "Événement mis à jour");
       break;
     case "volunteer":
       mutate((doc) => addVolunteerNeed(doc, values), "Besoin bénévole ajouté");
       break;
     case "help":
       mutate((doc) => addHelpPost(doc, values), "Annonce ajoutée");
+      break;
+    case "help-edit":
+      mutate((doc) => updateHelpPost(doc, form.dataset.id, values), "Annonce mise à jour");
+      break;
+    case "consultation":
+      mutate((doc) => addConsultation(doc, values), "Consultation ouverte");
+      break;
+    case "consultation-response":
+      mutate((doc) => addConsultationResponse(doc, form.dataset.id, values), "Réponse enregistrée");
       break;
     case "organization":
       mutate((doc) => {
@@ -177,6 +203,17 @@ function toggleWelcome(input) {
 
 function toggleHelp(button) {
   mutate((doc) => setHelpPostClosed(doc, button.dataset.id, button.dataset.closed === "true"), "Annonce mise à jour");
+}
+
+function toggleConsultation(button) {
+  mutate((doc) => setConsultationClosed(doc, button.dataset.id, button.dataset.closed === "true"), "Consultation mise à jour");
+}
+
+function archiveItem(button) {
+  mutate(
+    (doc) => setArchived(doc, button.dataset.collection, button.dataset.id, button.dataset.archived === "true"),
+    button.dataset.archived === "true" ? "Élément archivé" : "Élément restauré",
+  );
 }
 
 function downloadMeetingMarkdown(meetingId) {
@@ -268,6 +305,8 @@ document.addEventListener("click", (event) => {
   const action = button.dataset.action;
   if (action === "close-volunteer") closeVolunteer(button.dataset.id);
   if (action === "toggle-help") toggleHelp(button);
+  if (action === "toggle-consultation") toggleConsultation(button);
+  if (action === "archive-item") archiveItem(button);
   if (action === "export-meeting") downloadMeetingMarkdown(button.dataset.id);
   if (action === "copy-link") copyDocumentLink();
   if (action === "export") downloadExport();
