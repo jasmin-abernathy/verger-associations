@@ -22,13 +22,20 @@ export const repo = new Repo({
   network,
 });
 
-const requestedDoc = document.location.hash.slice(1) || localStorage.getItem(STORAGE_KEYS.rootDoc) || "";
+const sharedDoc = document.location.hash.slice(1);
+const requestedDoc = sharedDoc || localStorage.getItem(STORAGE_KEYS.rootDoc) || "";
 export let handle;
+if (sharedDoc && !isValidAutomergeUrl(sharedDoc)) {
+  throw new Error("Lien de document invalide. Vérifiez le lien reçu.");
+}
 try {
   if (isValidAutomergeUrl(requestedDoc)) handle = await repo.find(requestedDoc);
 } catch (error) {
-  console.warn("Document Verger indisponible, création d’un espace local.", error);
+  if (sharedDoc) throw new Error("Document partagé indisponible. Vérifiez la connexion et le jeton de synchronisation.", { cause: error });
+  if (requestedDoc) throw new Error("Document local indisponible. Ne videz pas les données du navigateur ; vérifiez votre sauvegarde et la connexion.", { cause: error });
 }
+if (sharedDoc && (!handle || !handle.doc())) throw new Error("Document partagé introuvable. Vérifiez la connexion et le jeton de synchronisation.");
+if (requestedDoc && (!handle || !handle.doc())) throw new Error("Document enregistré introuvable. Vérifiez votre sauvegarde avant de créer un nouvel espace.");
 if (!handle) {
   handle = repo.create();
   handle.change((doc) => Object.assign(doc, createInitialState()));
@@ -47,6 +54,15 @@ export function changeDoc(callback) {
     callback(draft);
     touch(draft);
   });
+}
+
+export function openImportedDocument(data) {
+  const imported = repo.create();
+  imported.change((draft) => Object.assign(draft, data));
+  handle = imported;
+  localStorage.setItem(STORAGE_KEYS.rootDoc, handle.url);
+  document.location.hash = handle.url;
+  return handle;
 }
 
 export function saveSyncSettings(url, token) {

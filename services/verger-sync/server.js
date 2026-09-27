@@ -27,8 +27,7 @@ const repo = new Repo({
   network: [new WebSocketServerAdapter(socketServer, 60_000)],
   storage: new NodeFSStorageAdapter(DATA_DIR),
   peerId: `verger-sync-${os.hostname()}`,
-  // Le serveur ne propose jamais spontanément ses documents : un client doit
-  // déjà connaître l'identifiant Automerge du document qu'il demande.
+  // Le serveur n'annonce pas spontanément les documents qu'il stocke.
   sharePolicy: async () => false,
 });
 

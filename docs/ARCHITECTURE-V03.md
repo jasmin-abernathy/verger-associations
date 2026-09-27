@@ -113,7 +113,7 @@ La PWA exporte un JSON portable avec :
 - date d’export ;
 - document métier.
 
-Des exports métier Markdown/PDF/ICS pourront être ajoutés sans remplacer cet export de sauvegarde.
+Un relevé Markdown de réunion existe. PDF et ICS restent à étudier. L'import JSON ouvre désormais un nouveau document pour éviter d'écraser l'espace partagé.
 
 ## Sécurité et données sensibles
 

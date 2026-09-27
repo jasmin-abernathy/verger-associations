@@ -40,8 +40,11 @@ Limites :
 - la révocation d’un membre n’est pas encore résolue ;
 - le stockage serveur n’est pas encore chiffré côté client par Verger ;
 - le jeton du pilote transite actuellement en query string WebSocket car l’adaptateur Automerge standard n’accepte pas d’en-tête d’authentification navigateur ; un reverse proxy qui journalise l’URL complète peut donc enregistrer ce secret.
+- la longueur de 24 caractères ne garantit aucune entropie : générer le jeton aléatoirement ; il est conservé dans le navigateur et tous ses détenteurs peuvent accéder aux documents dont ils connaissent l'identifiant ;
+- l'identifiant Automerge et le jeton ne constituent pas une invitation révocable ; une exclusion exige au minimum une rotation du jeton et la migration vers un nouveau document, sans effacer les copies déjà obtenues ;
+- chaque membre ayant accès au document peut modifier ses données, y compris les décisions : le relevé Markdown doit être validé séparément comme compte rendu officiel.
 
-Le serveur pilote ne doit donc pas être présenté comme adapté à un service multi-tenant sensible.
+Le serveur pilote doit rester réservé à un petit groupe de confiance sur une instance dédiée. Il ne convient pas à un service multi-tenant ou à un vote secret.
 
 Pour le pilote, les logs de `/sync` doivent exclure la query string. Le chantier #10 couvre le remplacement de cette protection par un modèle d’identité, d’invitation, de révocation et de chiffrement côté client.
 

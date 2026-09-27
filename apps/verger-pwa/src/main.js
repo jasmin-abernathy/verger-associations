@@ -17,6 +17,7 @@ import {
   changeDoc,
   currentDoc,
   handle,
+  openImportedDocument,
   saveSyncSettings,
   syncToken,
   syncUrl,
@@ -61,9 +62,9 @@ function render() {
 
 function updateConnectionState() {
   const online = navigator.onLine;
-  connectionState.dataset.state = syncUrl && online ? "sync" : "offline";
+  connectionState.dataset.state = "offline";
   connectionState.textContent = syncUrl
-    ? (online ? "Local + synchro" : "Hors ligne · local")
+    ? (online ? "Local · serveur configuré (état inconnu)" : "Hors ligne · local")
     : "Local uniquement";
 }
 
@@ -201,11 +202,8 @@ function downloadExport() {
 async function importExport(file) {
   try {
     const data = importAnyJson(await file.text());
-    changeDoc((draft) => {
-      for (const key of Object.keys(draft)) delete draft[key];
-      Object.assign(draft, data);
-    });
-    showToast("Sauvegarde importée");
+    openImportedDocument(data).on("change", render);
+    showToast("Sauvegarde ouverte dans un nouvel espace");
     render();
   } catch (error) {
     showToast(error?.message || "Import impossible", true);
