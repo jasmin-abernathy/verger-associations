@@ -19,6 +19,14 @@ L’objectif n’est pas de recréer une messagerie, un annuaire d’adhérents 
 - **Robots Chatmail** : rappels, alertes et synchronisations avec Hitobito ou d’autres services.
 - **Site public** : présentation, dons, formulaires externes et informations accessibles sans messagerie.
 
+## Frontière avec Communication libre
+
+Verger Associations développe des **outils métier associatifs** : réunions, décisions, actions et exports vers une archive officielle. Son pilote actuel fonctionne dans Delta Chat grâce à Webxdc ; il ne fournit pas d'infrastructure Matrix/Element ou Jitsi.
+
+[Communication libre](https://github.com/jasmin-abernathy/communication-libre) est un POC indépendant de **messagerie et visioconférence** pour collectifs, fondé sur Matrix/Element et Jitsi. Les deux projets ne doivent pas développer chacun une seconde messagerie pour reproduire l'autre. Leurs pilotes et leurs choix de transport restent séparés.
+
+Un relevé validé, exporté en Markdown ou JSON versionné, peut être transmis ou archivé indépendamment de la messagerie utilisée. Le paquet Webxdc actuel n'est pas compatible tel quel avec Element ; une interface Matrix éventuelle serait un chantier distinct, justifié par un usage réel.
+
 ## Prototype disponible
 
 Le code du premier module se trouve dans [`apps/reunions-decisions`](apps/reunions-decisions/README.md).

@@ -5,7 +5,9 @@
 - Nom du projet : **Verger Associations**.
 - Éditeur visé : **Le Verger du Numérique**.
 - Services associés possibles : **Le Potager du Web**.
-- Chatmail / Delta Chat fournit la communication.
+- Chatmail / Delta Chat fournit la communication du pilote Verger Associations ; ce choix ne constitue pas une obligation pour tous les collectifs.
+- Le POC distinct [Communication libre](https://github.com/jasmin-abernathy/communication-libre) évalue Matrix/Element et Jitsi comme infrastructure de communication, sans reprendre les fonctions métier de Verger Associations.
+- Le point de jonction envisagé est le relevé de décision validé exporté en Markdown ou JSON versionné, puis conservé dans une archive officielle. Aucune compatibilité Webxdc/Element ni synchronisation de messagerie n'est annoncée.
 - Webxdc fournit les mini-applications collaboratives.
 - Hitobito ou un back-office équivalent reste la source officielle.
 - Les intégrations externes passent par des robots explicites.
