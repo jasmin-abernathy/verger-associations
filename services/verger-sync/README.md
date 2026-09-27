@@ -32,6 +32,20 @@ wss://sync.exemple.fr/sync
 
 Le jeton se configure séparément dans Réglages > Synchronisation.
 
+### Attention aux journaux du reverse proxy
+
+L’adaptateur WebSocket Automerge 2.5.6 ne permet pas de fournir un en-tête d’authentification depuis le navigateur. Le pilote transmet donc le jeton en paramètre de l’URL WebSocket (`?token=...`).
+
+Conséquence : une configuration de logs qui enregistre l’URL complète peut enregistrer le secret.
+
+Pour le pilote :
+- ne pas journaliser la query string de `/sync` ;
+- préférer un format de log basé sur le chemin seul ;
+- ne jamais copier une URL WebSocket contenant le jeton dans un ticket ou une capture ;
+- utiliser un secret distinct par déploiement et prévoir sa rotation.
+
+Ce mécanisme doit être remplacé par l’architecture d’identité/E2EE avant un service mutualisé.
+
 ## À renforcer avant multi-tenant
 
 - authentification individuelle ;

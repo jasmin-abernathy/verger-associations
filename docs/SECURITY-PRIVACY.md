@@ -38,9 +38,12 @@ Limites :
 - le jeton est partagé au niveau du déploiement ;
 - il n’existe pas encore de compte individuel ;
 - la révocation d’un membre n’est pas encore résolue ;
-- le stockage serveur n’est pas encore chiffré côté client par Verger.
+- le stockage serveur n’est pas encore chiffré côté client par Verger ;
+- le jeton du pilote transite actuellement en query string WebSocket car l’adaptateur Automerge standard n’accepte pas d’en-tête d’authentification navigateur ; un reverse proxy qui journalise l’URL complète peut donc enregistrer ce secret.
 
 Le serveur pilote ne doit donc pas être présenté comme adapté à un service multi-tenant sensible.
+
+Pour le pilote, les logs de `/sync` doivent exclure la query string. Le chantier #10 couvre le remplacement de cette protection par un modèle d’identité, d’invitation, de révocation et de chiffrement côté client.
 
 ## Identifiant de document
 
