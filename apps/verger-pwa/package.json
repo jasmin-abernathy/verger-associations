@@ -10,7 +10,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node tests/domain.test.mjs",
+    "test": "node tests/domain.test.mjs && node tests/majority-judgment.test.mjs",
     "check": "node --check src/domain.js && node --check src/main.js && npm test"
   },
   "dependencies": {

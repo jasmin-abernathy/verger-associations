@@ -95,10 +95,12 @@ Les modules partagent désormais **le même document métier**. Ils ne doivent p
 
 ### Jugement majoritaire
 
-- préparation du scrutin dans Verger ;
-- passage à l’urne Mieux Voter ;
-- import du résultat agrégé ;
-- rattachement à la proposition et au relevé.
+- contrat interne v1 documenté dans `MAJORITY-JUDGMENT-CONTRACT.md` ;
+- préparation d’un scrutin à partir des propositions Verger ;
+- validation d’un résultat agrégé ;
+- rejet explicite de structures contenant des bulletins individuels ;
+- passage à l’urne Mieux Voter et compatibilité amont encore à réaliser ;
+- persistance du résultat dans le document Verger reportée jusqu’à stabilisation du format amont.
 
 ## Règle de développement
 
