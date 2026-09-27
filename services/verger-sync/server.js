@@ -15,6 +15,10 @@ const DATA_DIR = process.env.DATA_DIR || ".verger-sync";
 const SYNC_TOKEN = process.env.VERGER_SYNC_TOKEN || "";
 const AUTH_DB = process.env.VERGER_AUTH_DB || path.join(DATA_DIR, "authority.sqlite");
 const COOKIE_SECURE = process.env.VERGER_COOKIE_SECURE !== "false";
+const ALLOWED_ORIGINS = String(process.env.VERGER_ALLOWED_ORIGINS || "")
+  .split(",")
+  .map((value) => value.trim())
+  .filter(Boolean);
 
 if (!SYNC_TOKEN || SYNC_TOKEN.length < 24) {
   console.error("VERGER_SYNC_TOKEN doit être défini avec au moins 24 caractères.");
@@ -39,7 +43,7 @@ const repo = new Repo({
 
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
-mountAuthorityApi(app, { db: authorityDb, cookieSecure: COOKIE_SECURE });
+mountAuthorityApi(app, { db: authorityDb, cookieSecure: COOKIE_SECURE, allowedOrigins: ALLOWED_ORIGINS });
 app.get("/health", (_request, response) => response.json({ ok: true, service: "verger-sync" }));
 app.get("/", (_request, response) => response.type("text/plain").send("Verger Sync\n"));
 

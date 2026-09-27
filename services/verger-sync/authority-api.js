@@ -20,9 +20,9 @@ import { parseCookies } from "./authority-security.js";
 
 const COOKIE = "verger_session";
 
-export function mountAuthorityApi(app, { db, cookieSecure = true }) {
+export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins = [] }) {
   app.use("/api/v1", (request, response, next) => {
-    if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method) && !sameOrigin(request)) {
+    if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method) && !sameOrigin(request, allowedOrigins)) {
       response.status(403).json({ error: "origin_rejected", message: "Origine de requête refusée" });
       return;
     }
@@ -164,11 +164,12 @@ function clearSessionCookie(response, secure) {
   response.setHeader("Set-Cookie", parts.join("; "));
 }
 
-function sameOrigin(request) {
+function sameOrigin(request, allowedOrigins = []) {
   const origin = request.headers.origin;
   if (!origin) return true;
   try {
     const originUrl = new URL(origin);
+    if (allowedOrigins.includes(originUrl.origin)) return true;
     const forwardedHost = String(request.headers["x-forwarded-host"] || "").split(",")[0].trim();
     const host = forwardedHost || String(request.headers.host || "").trim();
     if (!host || originUrl.host !== host) return false;
