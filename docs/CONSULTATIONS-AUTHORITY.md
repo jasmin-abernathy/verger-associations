@@ -159,10 +159,13 @@ Le premier administrateur est créé explicitement depuis le serveur :
 
 ```bash
 cd services/verger-sync
-npm run bootstrap-admin -- admin@example.org 'mot-de-passe-long' 'Mon association' association-id
+read -s VERGER_BOOTSTRAP_PASSWORD
+export VERGER_BOOTSTRAP_PASSWORD
+npm run bootstrap-admin -- admin@example.org "Mon association" association-id
+unset VERGER_BOOTSTRAP_PASSWORD
 ```
 
-Les comptes suivants passent par invitation.
+Les comptes suivants passent par invitation. Le pilote affiche un **code d’invitation à copier** plutôt qu’un lien contenant le secret dans la query string, afin de limiter sa présence dans les historiques et journaux HTTP.
 
 ## Migration de l’ancien format
 

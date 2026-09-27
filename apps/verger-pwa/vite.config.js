@@ -17,6 +17,11 @@ export default defineConfig({
     },
   }],
   base: "./",
+  server: {
+    proxy: {
+      "/api": "http://localhost:3030",
+    },
+  },
   build: {
     target: "es2022",
     sourcemap: false,

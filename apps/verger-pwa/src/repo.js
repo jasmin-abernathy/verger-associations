@@ -22,7 +22,8 @@ export const repo = new Repo({
   network,
 });
 
-const sharedDoc = document.location.hash.slice(1);
+const publicPollMode = new URLSearchParams(document.location.search).has("publicPoll");
+const sharedDoc = publicPollMode ? "" : document.location.hash.slice(1);
 const requestedDoc = sharedDoc || localStorage.getItem(STORAGE_KEYS.rootDoc) || "";
 export let handle;
 if (sharedDoc && !isValidAutomergeUrl(sharedDoc)) {
@@ -40,8 +41,10 @@ if (!handle) {
   handle = repo.create();
   handle.change((doc) => Object.assign(doc, createInitialState()));
 }
-localStorage.setItem(STORAGE_KEYS.rootDoc, handle.url);
-document.location.hash = handle.url;
+if (!publicPollMode) {
+  localStorage.setItem(STORAGE_KEYS.rootDoc, handle.url);
+  document.location.hash = handle.url;
+}
 handle.change((doc) => ensureState(doc));
 
 export function currentDoc() {

@@ -74,13 +74,205 @@ function help(state) {
     <article class="card"><h2>Nouvelle annonce</h2><form data-form="help" class="form"><label>Type<select name="kind"><option value="request">Demande</option><option value="offer">Offre</option></select></label><label>Titre<input name="title" required maxlength="240"></label><label>Précisions<textarea name="details" maxlength="2000" rows="4"></textarea></label><label>Contact facultatif<input name="contact" maxlength="180"></label><button>Publier dans l’association</button></form></article></div>`;
 }
 
-function consultations(state) {
-  const list = activeRecords(state.consultations || {}).reverse();
-  const archived = archivedRecords(state.consultations || {});
-  return `${heading("Consultations", "Questions nominatives simples, visibles par les personnes ayant accès à l’association.")}
-    <p class="warning"><strong>Pas d’anonymat :</strong> le nom et la réponse sont enregistrés dans le document partagé et son historique. Pour une consultation anonyme, utiliser plus tard un protocole séparé et audité.</p>
-    <div class="grid-2"><article class="card"><h2>Consultations</h2>${list.length ? `<div class="stack">${list.map((item) => consultationCard(item)).join("")}</div>` : empty("Aucune consultation.")}${archivedList("Consultations archivées", archived, "consultations", (item) => item.title)}</article>
-    <article class="card"><h2>Nouvelle consultation</h2><form data-form="consultation" class="form"><label>Titre<input name="title" required maxlength="240"></label><label>Question<textarea name="question" required maxlength="2000" rows="4"></textarea></label><button>Ouvrir la consultation</button></form></article></div>`;
+function consultations(state, context) {
+  const authority = context.authority || {};
+  const legacy = Object.values(state.consultations || {})
+    .filter(Boolean)
+    .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+
+  if (authority.publicMode) {
+    return `${heading("Résultats publics", "Résultats agrégés d’une consultation clôturée.")}
+      ${authority.loading ? '<p class="muted">Chargement des résultats…</p>' : authority.error ? `<p class="warning">${e(authority.error)}</p>` : renderPollResults(authority.publicResults, true)}`;
+  }
+
+  if (authority.loading && !authority.account) {
+    return `${heading("Consultations", "Choisir dans une liste proposée, avec un compte vérifié.")}
+      <article class="card"><p class="muted">Vérification de la session…</p></article>
+      ${legacyConsultations(legacy)}`;
+  }
+
+  if (!authority.account) {
+    return `${heading("Consultations", "Choisir dans une liste proposée, avec un compte vérifié.")}
+      <div class="grid-2">
+        <article class="card">
+          <h2>Se connecter</h2>
+          <p class="muted">Le compte sert à appliquer les droits côté serveur. Le rôle métier de la fiche membre reste séparé.</p>
+          ${authority.error ? `<p class="warning">${e(authority.error)}</p>` : ""}
+          <form data-form="account-login" class="form">
+            <label>E-mail<input name="email" type="email" autocomplete="username" required maxlength="254"></label>
+            <label>Mot de passe<input name="password" type="password" autocomplete="current-password" required minlength="12"></label>
+            <button>Se connecter</button>
+          </form>
+          <p class="muted">Organisation : <code>${e(state.organization?.id || "")}</code></p>
+        </article>
+        <article class="card">
+          <h2>Accepter une invitation</h2>
+          <p class="muted">Le rôle a déjà été choisi par l’administrateur qui a créé l’invitation.</p>
+          <form data-form="account-accept-invite" class="form">
+            <label>Code d’invitation<input name="token" required autocomplete="off" value="${e(authority.inviteToken || "")}"></label>
+            <label>Choisir un mot de passe<input name="password" type="password" autocomplete="new-password" required minlength="12"></label>
+            <button>Créer mon compte</button>
+          </form>
+        </article>
+      </div>
+      ${legacyConsultations(legacy)}`;
+  }
+
+  const account = authority.account;
+  const canCreate = ["administrator", "facilitator"].includes(account.role);
+  const selected = authority.selectedPoll;
+
+  return `${heading("Consultations", "Un choix unique par compte, modifiable tant que la consultation reste ouverte.")}
+    <div class="account-strip">
+      <div><strong>${e(account.email)}</strong><span>${e(accountRoleLabel(account.role))}</span></div>
+      <button type="button" class="secondary" data-action="account-logout">Se déconnecter</button>
+    </div>
+    ${authority.error ? `<p class="warning">${e(authority.error)}</p>` : ""}
+    ${selected ? pollDetail(selected, authority, account) : pollHome(state, authority, canCreate)}
+    ${legacyConsultations(legacy)}`;
+}
+
+function pollHome(state, authority, canCreate) {
+  const polls = authority.polls || [];
+  const members = activeRecords(state.members);
+  return `<div class="consultation-layout">
+    <section class="stack">
+      <article class="card">
+        <div class="card-head"><div><h2>Consultations</h2><p class="muted">Les consultations ouvertes apparaissent en premier.</p></div>${canCreate ? '<button type="button" class="secondary" data-action="toggle-poll-create">Créer</button>' : ""}</div>
+        ${polls.length ? `<div class="poll-list">${polls.map(pollListItem).join("")}</div>` : empty("Aucune consultation vérifiée.")}
+      </article>
+      ${authority.account?.role === "administrator" ? `<article class="card"><details><summary>Inviter un compte</summary>
+        <form data-form="account-invite" class="form">
+          <label>E-mail<input name="email" type="email" required maxlength="254"></label>
+          <label>Rôle<select name="role"><option value="member">Membre</option><option value="facilitator">Animateur</option><option value="reader">Lecteur</option><option value="administrator">Administrateur</option></select></label>
+          <label>Fiche membre associée <span class="muted">(facultatif)</span><select name="memberId"><option value="">Aucune</option>${members.map((member) => `<option value="${e(member.id)}">${e(member.name)}</option>`).join("")}</select></label>
+          <button>Créer le code d’invitation</button>
+        </form>
+        ${authority.invitationCode ? `<div class="invitation-code"><strong>Code à transmettre</strong><code>${e(authority.invitationCode)}</code><button type="button" class="secondary" data-action="copy-invitation-code" data-code="${e(authority.invitationCode)}">Copier</button></div>` : ""}
+      </details></article>` : ""}
+    </section>
+    ${canCreate ? `<aside class="card poll-create-panel" data-poll-create hidden>
+      <div class="card-head"><div><h2>Créer</h2><p class="muted">2 à 8 réponses proposées.</p></div><button type="button" class="text-button" data-action="toggle-poll-create">Fermer</button></div>
+      <form data-form="poll-create" class="form">
+        <label>Titre<input name="title" required maxlength="240"></label>
+        <label>Question<textarea name="question" required maxlength="2000" rows="3"></textarea></label>
+        <div>
+          <span class="field-label">Réponses proposées</span>
+          <div class="option-editor" data-option-list>
+            ${pollOptionRow(1, true)}
+            ${pollOptionRow(2, true)}
+          </div>
+          <button type="button" class="secondary" data-action="option-add">Ajouter une réponse</button>
+        </div>
+        <label>Échéance <span class="muted">(facultative)</span><input name="deadlineAt" type="datetime-local"></label>
+        <label>Résultats<select name="resultsVisibility"><option value="members">Membres seulement</option><option value="public_after_close">Page publique après clôture</option></select></label>
+        <button>Ouvrir la consultation</button>
+      </form>
+    </aside>` : ""}
+  </div>`;
+}
+
+function pollListItem(poll) {
+  const status = poll.status === "open" ? "Ouverte" : poll.status === "closed" ? "Clôturée" : "Annulée";
+  return `<article class="poll-list-item">
+    <button type="button" class="poll-open-button" data-action="open-poll" data-id="${e(poll.id)}">
+      <span><strong>${e(poll.title)}</strong><small>${poll.deadlineAt ? `Échéance : ${e(formatDateTime(poll.deadlineAt))} · ` : ""}${poll.responseCount} réponse${poll.responseCount > 1 ? "s" : ""}</small></span>
+      <span class="badge">${status}</span>
+    </button>
+  </article>`;
+}
+
+function pollDetail(poll, authority, account) {
+  const results = authority.results;
+  return `<section class="stack">
+    <button type="button" class="text-button" data-action="poll-back">← Toutes les consultations</button>
+    <article class="card">
+      <div class="card-head"><div><h2>${e(poll.title)}</h2><p>${e(poll.question)}</p></div><span class="badge">${poll.status === "open" ? "Ouverte" : poll.status === "closed" ? "Clôturée" : "Annulée"}</span></div>
+      <p class="muted">${poll.responseCount} réponse${poll.responseCount > 1 ? "s" : ""}${poll.deadlineAt ? ` · Échéance : ${e(formatDateTime(poll.deadlineAt))}` : ""}</p>
+      ${poll.canEdit ? pollEditForm(poll) : ""}
+      ${poll.status === "open" ? pollResponseForm(poll) : ""}
+      ${poll.status === "closed" ? renderPollResults(results, false) : ""}
+      ${poll.status === "open" && poll.canClose ? '<div class="button-row"><button type="button" data-action="close-poll" data-id="'+e(poll.id)+'">Clôturer la consultation</button></div>' : ""}
+      ${poll.status === "open" && account.role === "administrator" ? `<details><summary>Administration</summary><form data-form="poll-cancel" data-id="${e(poll.id)}" class="form"><label>Motif d’annulation<input name="reason" maxlength="500"></label><button class="secondary">Annuler administrativement</button></form></details>` : ""}
+      ${poll.status === "closed" && poll.resultsVisibility === "public_after_close" ? `<button type="button" class="secondary" data-action="copy-public-poll-link" data-id="${e(poll.id)}">Copier le lien public des résultats</button>` : ""}
+    </article>
+  </section>`;
+}
+
+function pollEditForm(poll) {
+  return `<details><summary>Modifier avant la première réponse</summary>
+    <form data-form="poll-edit" data-id="${e(poll.id)}" class="form">
+      <label>Titre<input name="title" required maxlength="240" value="${e(poll.title)}"></label>
+      <label>Question<textarea name="question" required maxlength="2000" rows="3">${e(poll.question)}</textarea></label>
+      <div><span class="field-label">Réponses proposées</span><div class="option-editor" data-option-list>
+        ${poll.options.map((option, index) => pollOptionRow(index + 1, true, option.label)).join("")}
+      </div><button type="button" class="secondary" data-action="option-add">Ajouter une réponse</button></div>
+      <label>Échéance indicative <span class="muted">(facultative)</span><input name="deadlineAt" type="datetime-local" value="${e(toLocalDateTime(poll.deadlineAt))}"></label>
+      <label>Résultats<select name="resultsVisibility"><option value="members" ${poll.resultsVisibility === "members" ? "selected" : ""}>Membres seulement</option><option value="public_after_close" ${poll.resultsVisibility === "public_after_close" ? "selected" : ""}>Page publique après clôture</option></select></label>
+      <button>Enregistrer les modifications</button>
+    </form>
+  </details>`;
+}
+
+function pollResponseForm(poll) {
+  if (!poll.canRespond) return '<p class="muted">Votre rôle permet de consulter cette question, mais pas d’y répondre.</p>';
+  return `<form data-form="poll-response" data-id="${e(poll.id)}" class="form">
+    <fieldset class="radio-group"><legend>Votre choix</legend>
+      ${poll.options.map((option) => `<label class="radio-choice"><input type="radio" name="optionId" value="${e(option.id)}" ${poll.myOptionId === option.id ? "checked" : ""} required><span>${e(option.label)}</span></label>`).join("")}
+    </fieldset>
+    <button>${poll.myOptionId ? "Modifier mon choix" : "Enregistrer mon choix"}</button>
+    <p class="muted">Votre réponse n’est comptabilisée qu’après confirmation du serveur.</p>
+  </form>`;
+}
+
+function renderPollResults(results, publicView) {
+  if (!results) return '<p class="muted">Chargement des résultats…</p>';
+  if (!results.total) {
+    return `<section class="poll-results"><h2>Résultats${publicView ? " publics" : ""}</h2><p>Aucune réponse enregistrée.</p></section>`;
+  }
+  const colors = ["#315f3a","#557a46","#7e944e","#a5a55d","#94764c","#756057","#5f6c7a","#6d5b83"];
+  let cursor = 0;
+  const stops = results.options.map((option, index) => {
+    const start = Math.min(100, cursor);
+    cursor = index === results.options.length - 1 ? 100 : Math.min(100, cursor + option.percent);
+    return `${colors[index % colors.length]} ${start}% ${cursor}%`;
+  }).join(", ");
+  return `<section class="poll-results"><h2>Résultats${publicView ? " publics" : ""}</h2><p><strong>${results.total}</strong> réponse${results.total > 1 ? "s" : ""}</p>
+    <div class="poll-result-grid">
+      <div class="poll-chart" style="background:conic-gradient(${stops})" aria-hidden="true"></div>
+      <ul class="poll-legend">${results.options.map((option, index) => `<li><span class="legend-swatch" style="background:${colors[index % colors.length]}" aria-hidden="true"></span><span><strong>${e(option.label)}</strong> — ${option.count} (${option.percent} %)</span></li>`).join("")}</ul>
+    </div>
+  </section>`;
+}
+
+function legacyConsultations(items) {
+  if (!items.length) return "";
+  return `<details class="card legacy-consultations"><summary>Anciennes consultations expérimentales (${items.length})</summary>
+    <p class="warning">Ces éléments proviennent de l’ancien format Automerge. Les noms et réponses n’ont pas été vérifiés par un compte serveur et ne constituent pas des votes authentifiés.</p>
+    <ul class="clean-list">${items.map((item) => `<li><strong>${e(item.title || "Consultation")}</strong><span>${e(item.question || "")} · ${Object.keys(item.responses || {}).length} réponse(s)</span></li>`).join("")}</ul>
+  </details>`;
+}
+
+function pollOptionRow(position, required = false, value = "") {
+  return `<div class="option-row" data-option-row><span class="option-position">${position}</span><input name="option" maxlength="240" ${required ? "required" : ""} value="${e(value)}" aria-label="Réponse proposée ${position}"><div class="option-buttons"><button type="button" class="text-button" data-action="option-up" aria-label="Monter cette réponse">↑</button><button type="button" class="text-button" data-action="option-down" aria-label="Descendre cette réponse">↓</button><button type="button" class="text-button" data-action="option-remove" aria-label="Retirer cette réponse">×</button></div></div>`;
+}
+
+function accountRoleLabel(role) {
+  return ({ administrator: "Administrateur", facilitator: "Animateur", member: "Membre", reader: "Lecteur" })[role] || role;
+}
+
+function toLocalDateTime(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
+function formatDateTime(value) {
+  if (!value) return "";
+  try { return new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value)); }
+  catch { return value; }
 }
 
 function more() {

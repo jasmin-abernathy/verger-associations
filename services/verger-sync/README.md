@@ -1,8 +1,13 @@
 # Verger Sync — pilote
 
-Petit pair de synchronisation Automerge pour Verger Associations.
+Service serveur du pilote Verger Associations.
 
-Il ne contient ni interface métier ni base d’adhérents : il conserve et retransmet les documents Automerge que les clients connaissent déjà.
+Il remplit désormais deux rôles séparés :
+
+1. **Verger Sync** conserve et retransmet les documents Automerge connus des clients ;
+2. **Autorité comptes/consultations** conserve en SQLite les comptes, rôles, invitations, sessions, choix et clôtures qui ne peuvent pas être sécurisés dans le CRDT partagé.
+
+Il ne devient pas pour autant le back-office métier complet de l’association.
 
 ## Sécurité du pilote
 
@@ -55,3 +60,59 @@ Ce mécanisme doit être remplacé par l’architecture d’identité/E2EE avant
 - quotas et protections anti-abus ;
 - sauvegardes chiffrées et procédure de restauration ;
 - observabilité minimale sans journaliser les jetons ni les identifiants de documents.
+
+
+## Autorité comptes et consultations
+
+Le contrat est documenté dans `../../docs/CONSULTATIONS-AUTHORITY.md`.
+
+Base par défaut :
+
+```text
+/data/authority.sqlite
+```
+
+Le serveur expose sous la même origine :
+
+```text
+/api/v1/...
+```
+
+Pour le pilote, servir idéalement la PWA et cette API derrière le même reverse proxy et le même nom d’hôte.
+
+### Premier administrateur
+
+Le premier compte ne passe pas par invitation. Il se crée explicitement côté serveur.
+
+En installation locale :
+
+```bash
+read -s VERGER_BOOTSTRAP_PASSWORD
+export VERGER_BOOTSTRAP_PASSWORD
+npm run bootstrap-admin -- admin@example.org "Mon association" association-id
+unset VERGER_BOOTSTRAP_PASSWORD
+```
+
+L’`association-id` doit correspondre à l’identifiant de l’association affiché par la PWA.
+
+Les comptes suivants sont créés depuis une invitation administrateur avec un rôle fixe.
+
+### Docker
+
+Le script de bootstrap est inclus dans l’image. Exemple :
+
+```bash
+read -s VERGER_BOOTSTRAP_PASSWORD
+export VERGER_BOOTSTRAP_PASSWORD
+docker compose exec -e VERGER_BOOTSTRAP_PASSWORD="$VERGER_BOOTSTRAP_PASSWORD" verger-sync \
+  npm run bootstrap-admin -- admin@example.org "Mon association" association-id
+unset VERGER_BOOTSTRAP_PASSWORD
+```
+
+### Limites
+
+- le serveur peut lire les réponses nominatives ;
+- récupération de mot de passe non encore définie ;
+- pas de vote secret ni d’anonymat ;
+- sauvegarde/restauration de `authority.sqlite` à documenter avant pilote réel ;
+- le rôle de compte est distinct du rôle métier libre d’une fiche membre.

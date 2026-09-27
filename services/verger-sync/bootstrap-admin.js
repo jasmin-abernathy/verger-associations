@@ -4,10 +4,11 @@ import { createAccount, createOrganization } from "./consultations-service.js";
 
 const dataDir = process.env.DATA_DIR || ".verger-sync";
 const dbPath = process.env.VERGER_AUTH_DB || path.join(dataDir, "authority.sqlite");
-const [email, password, organizationName = "Mon association", organizationId = "default"] = process.argv.slice(2);
+const [email, organizationName = "Mon association", organizationId = "default"] = process.argv.slice(2);
+const password = process.env.VERGER_BOOTSTRAP_PASSWORD || "";
 
 if (!email || !password) {
-  console.error("Usage: npm run bootstrap-admin -- email mot-de-passe [nom-association] [id-association]");
+  console.error("Usage: définir VERGER_BOOTSTRAP_PASSWORD puis npm run bootstrap-admin -- email [nom-association] [id-association]");
   process.exit(1);
 }
 

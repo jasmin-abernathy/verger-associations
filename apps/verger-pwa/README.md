@@ -22,14 +22,14 @@ Cette application devient le **client principal** de Verger Associations. Le pro
 - mode accessible renforcé ;
 - service worker et manifeste PWA.
 
-## Modules encore au stade d’emplacement
+## Modules ajoutés depuis le socle initial
 
 - Accueil des nouveaux membres ;
 - Entraide ;
-- Consultations ;
-- Signalements ;
-- Alertes ;
-- import du résultat agrégé de l’urne Mieux Voter.
+- Consultations vérifiées à choix unique via l’autorité serveur ;
+- contrat d’interopérabilité du jugement majoritaire.
+
+Les Signalements et Alertes restent à cadrer.
 
 ## Développement
 
@@ -98,3 +98,23 @@ Procédure recommandée :
 5. conserver temporairement l’ancien lien de document tant que la restauration n’a pas été vérifiée.
 
 Une sauvegarde JSON doit être protégée comme les données qu’elle contient.
+
+
+## Comptes et consultations vérifiées
+
+Les réunions, actions et autres données collaboratives restent local-first dans Automerge.
+
+Les consultations nécessitant de vrais droits utilisent `/api/v1` :
+
+- comptes créés sur invitation ;
+- rôles fixes administrateur / animateur / membre / lecteur ;
+- 2 à 8 réponses proposées par le créateur ;
+- aucun champ de nom au moment de répondre ;
+- une réponse par compte, modifiable avant clôture ;
+- seul le compte créateur peut clôturer ;
+- résultats agrégés après clôture ;
+- page publique facultative sans identité individuelle.
+
+En développement, Vite redirige `/api` vers `http://localhost:3030`.
+
+Les anciennes consultations stockées dans Automerge ne sont plus des votes actifs : elles restent visibles comme archives expérimentales non vérifiées.

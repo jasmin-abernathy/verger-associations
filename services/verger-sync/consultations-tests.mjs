@@ -2,16 +2,20 @@ import assert from "node:assert/strict";
 import { openAuthorityDatabase } from "./authority-db.js";
 import {
   acceptInvitation,
+  accountFromSessionToken,
+  authenticateAccount,
   cancelPoll,
   closePoll,
   createAccount,
   createInvitation,
+  createSession,
   createOrganization,
   createPoll,
   getPoll,
   listPolls,
   memberResults,
   publicResults,
+  revokeSession,
   saveResponse,
   updatePollBeforeResponses,
 } from "./consultations-service.js";
@@ -50,6 +54,22 @@ const otherOrgAdmin = createAccount(db, {
   password: "other-password-123",
   role: "administrator",
 });
+
+const authenticated = authenticateAccount(db, {
+  organizationId: "org-a",
+  email: "admin@example.test",
+  password: "admin-password-123",
+});
+assert.equal(authenticated.id, admin.id);
+assert.throws(() => authenticateAccount(db, {
+  organizationId: "org-a",
+  email: "admin@example.test",
+  password: "wrong-password-123",
+}), (error) => error.status === 401);
+const session = createSession(db, admin, { ttlMs: 60_000 });
+assert.equal(accountFromSessionToken(db, session.token).id, admin.id);
+revokeSession(db, session.token);
+assert.equal(accountFromSessionToken(db, session.token), null);
 
 assert.throws(
   () => createPoll(db, member, { title: "Interdit", question: "?", options: ["A", "B"] }),

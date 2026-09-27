@@ -168,7 +168,9 @@ function sameOrigin(request) {
   const origin = request.headers.origin;
   if (!origin) return true;
   try {
-    return new URL(origin).host === String(request.headers.host || "");
+    const proto = String(request.headers["x-forwarded-proto"] || (request.socket?.encrypted ? "https" : "http")).split(",")[0].trim();
+    const host = String(request.headers.host || "");
+    return new URL(origin).origin === `${proto}://${host}`;
   } catch {
     return false;
   }

@@ -40,7 +40,13 @@ Le pourcentage a été recalibré lors du pivot v0.3 : le prototype Webxdc a val
   - [x] définir le contrat de consultations à choix unique avec comptes et rôles fixes ;
   - [x] implémenter l’autorité SQLite comptes/invitations/sessions/consultations côté serveur ;
   - [x] tester localement les règles d’autorisation et l’agrégation publique ;
-  - [ ] brancher la PWA sur l’API de consultations vérifiées ;
+  - [x] brancher la PWA sur l’API de consultations vérifiées ;
+  - [x] supprimer le champ de nom libre du parcours de réponse ;
+  - [x] ajouter création 2–8 choix, réponse radio, clôture créateur et annulation admin ;
+  - [x] ajouter résultats agrégés et graphique circulaire avec légende textuelle ;
+  - [x] ajouter vue publique agrégée sans identifiant Automerge dans l’URL ;
+  - [x] exclure `/api/` du cache du service worker ;
+  - [ ] tester le parcours comptes/consultations sur deux vrais navigateurs ;
   - [ ] tester clavier, zoom 200 % et lecteur d’écran.
 
 - [ ] **55–75 % — Pilote autonome**

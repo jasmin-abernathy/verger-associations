@@ -118,3 +118,12 @@ Les réponses ne sont considérées comme enregistrées qu’après confirmation
 Le rôle de compte est séparé du rôle métier libre de la fiche membre. Un `memberId` facultatif relie explicitement les deux.
 
 La récupération de compte, la durée de conservation et la sauvegarde/restauration de `authority.sqlite` restent à définir avant un pilote sensible.
+
+
+## Cache et consultations
+
+Le service worker ignore explicitement les requêtes `/api/`. Les sessions, listes de consultations et résultats authentifiés ne doivent jamais être servis depuis le cache PWA comme s’ils étaient des ressources hors ligne.
+
+Les réponses aux consultations ne disposent volontairement d’aucune file locale : si le serveur ne confirme pas l’écriture, l’interface indique que la réponse n’a pas été comptabilisée.
+
+Les codes d’invitation sont affichés comme secrets à copier manuellement et ne sont pas placés automatiquement dans une URL.
