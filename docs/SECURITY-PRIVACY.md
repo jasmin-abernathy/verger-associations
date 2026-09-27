@@ -66,6 +66,8 @@ Le socle v0.3 ne doit pas servir par défaut à stocker :
 
 Les membres sont volontairement limités à un nom, rôle et contact facultatif tant que les permissions et durées de conservation ne sont pas stabilisées.
 
+Les annonces d'entraide et leurs coordonnées facultatives sont visibles par toutes les personnes ayant accès au document commun. L'accueil des membres est également une liste partagée, sans documents joints ni transmission automatisée.
+
 ## Dépendances
 
 Les dépendances Automerge sont embarquées au build. La PWA publiée ne doit pas charger de JavaScript métier depuis un CDN tiers.

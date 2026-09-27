@@ -1,9 +1,9 @@
-import { DECISION_METHODS, activeRecords, counts } from "./domain.js";
+import { DECISION_METHODS, WELCOME_STEPS, activeRecords, counts } from "./domain.js";
 import { empty, escapeHtml as e, formatDate, heading, stat } from "./helpers.js";
 import { meetingCard } from "./meetings.js";
 
 export function renderView(name, state, context) {
-  const renderers = { dashboard, members, meetings, decisions, actions, events, volunteers, more, settings };
+  const renderers = { dashboard, members, welcome, meetings, decisions, actions, events, volunteers, help, more, settings };
   return renderers[name]?.(state, context) || "";
 }
 
@@ -21,6 +21,14 @@ function members(state) {
   return `${heading("Membres", "Un annuaire minimal avant de définir des permissions plus fines.")}
     <div class="grid-2"><article class="card">${list.length ? `<ul class="clean-list">${list.map((m) => `<li><strong>${e(m.name)}</strong><span>${e(m.role || "Membre")}${m.contact ? ` · ${e(m.contact)}` : ""}</span></li>`).join("")}</ul>` : empty("Aucun membre.")}</article>
     <article class="card"><h2>Ajouter</h2><form data-form="member" class="form"><label>Nom<input name="name" required maxlength="120"></label><label>Rôle<input name="role" maxlength="120" value="Membre"></label><label>Contact facultatif<input name="contact" maxlength="180"></label><button>Ajouter le membre</button></form></article></div>`;
+}
+
+function welcome(state) {
+  const list = activeRecords(state.members);
+  return `${heading("Accueil", "Suivre les premières étapes avec chaque nouveau membre.")}
+    <p class="muted">Cette liste est partagée avec toutes les personnes qui accèdent à l’association. Elle ne transmet aucun document automatiquement.</p>
+    <div class="stack">${list.length ? list.map((member) => `<article class="card"><h2>${e(member.name)}</h2><p class="muted">${e(member.role || "Membre")}</p>
+      <div class="form">${Object.entries(WELCOME_STEPS).map(([step, label]) => `<label><input type="checkbox" data-member-id="${e(member.id)}" data-welcome-step="${step}" ${member.welcome?.[step] ? "checked" : ""}> ${label}</label>`).join("")}</div></article>`).join("") : empty("Ajoutez d’abord un membre.")}</div>`;
 }
 
 function meetings(state) {
@@ -54,9 +62,17 @@ function volunteers(state) {
   return `${heading("Bénévolat", "Exprimer les besoins avant de construire une gestion complexe.")}<div class="grid-2"><article class="card">${needs.length ? `<ul class="clean-list">${needs.map((need) => `<li><strong>${e(need.title)}</strong><span>${need.slots} personne${need.slots > 1 ? "s" : ""} recherchée${need.slots > 1 ? "s" : ""}${need.closed ? " · clôturé" : ""}</span>${!need.closed ? `<button class="text-button" type="button" data-action="close-volunteer" data-id="${e(need.id)}">Clôturer</button>` : ""}</li>`).join("")}</ul>` : empty("Aucun besoin ouvert.")}</article><article class="card"><h2>Nouveau besoin</h2><form data-form="volunteer" class="form"><label>Besoin<input name="title" required maxlength="240"></label><label>Nombre de personnes<input name="slots" type="number" min="1" max="999" value="1"></label><label>Événement lié<select name="eventId"><option value="">Aucun</option>${eventList.map((item) => `<option value="${e(item.id)}">${e(item.title)}</option>`).join("")}</select></label><button>Ajouter</button></form></article></div>`;
 }
 
+function help(state) {
+  const posts = activeRecords(state.helpPosts || {}).reverse();
+  return `${heading("Entraide", "Partager une demande ou une proposition d’aide au sein de l’association.")}
+    <p class="muted">Les annonces et leurs coordonnées sont visibles par toutes les personnes ayant accès à cet espace.</p>
+    <div class="grid-2"><article class="card"><h2>Annonces</h2>${posts.length ? `<ul class="clean-list">${posts.map((post) => `<li><strong>${post.kind === "offer" ? "Offre" : "Demande"} · ${e(post.title)}</strong><span>${post.closed ? "Clôturée" : "Ouverte"}${post.contact ? ` · Contact : ${e(post.contact)}` : ""}</span>${post.details ? `<p>${e(post.details)}</p>` : ""}<button type="button" class="text-button" data-action="toggle-help" data-id="${e(post.id)}" data-closed="${!post.closed}">${post.closed ? "Rouvrir" : "Clôturer"}</button></li>`).join("")}</ul>` : empty("Aucune annonce.")}</article>
+    <article class="card"><h2>Nouvelle annonce</h2><form data-form="help" class="form"><label>Type<select name="kind"><option value="request">Demande</option><option value="offer">Offre</option></select></label><label>Titre<input name="title" required maxlength="240"></label><label>Précisions<textarea name="details" maxlength="2000" rows="4"></textarea></label><label>Contact facultatif<input name="contact" maxlength="180"></label><button>Publier dans l’association</button></form></article></div>`;
+}
+
 function more() {
   return `${heading("Autres modules", "Le socle est prêt à accueillir les fonctions validées par le pilote.")}<div class="module-grid">${[
-    ["Accueil","Parcours d’arrivée, documents et premières tâches."],["Entraide","Demandes, offres et mise en relation."],["Consultations","Questionnaires nominatifs ou anonymes."],["Signalements","Remontée et suivi d’un problème."],["Alertes","Qualification d’alertes externes."],["Jugement majoritaire","Urne Mieux Voter puis import du résultat agrégé."],
+    ["Consultations","Questionnaires nominatifs ou anonymes."],["Signalements","Remontée et suivi d’un problème."],["Alertes","Qualification d’alertes externes."],["Jugement majoritaire","Urne Mieux Voter puis import du résultat agrégé."],
   ].map(([title,text]) => `<article class="card"><span class="badge">À venir</span><h2>${title}</h2><p>${text}</p></article>`).join("")}</div>`;
 }
 

@@ -4,6 +4,7 @@ import {
   addAgendaItem,
   addContribution,
   addEvent,
+  addHelpPost,
   addMeeting,
   addMember,
   addProposal,
@@ -13,12 +14,21 @@ import {
   exportPortableJson,
   importPortableJson,
   recordDecision,
+  setHelpPostClosed,
+  setWelcomeStep,
+  ensureState,
 } from "../src/domain.js";
 import { exportMeetingMarkdown, importAnyJson } from "../src/portability.js";
 
 const doc = createInitialState("Aldebaran test");
 const member = addMember(doc, { name: "Alice", role: "Trésorière" });
 assert.equal(doc.members[member].name, "Alice");
+setWelcomeStep(doc, member, "introduced", true);
+assert.equal(doc.members[member].welcome.introduced, true);
+const help = addHelpPost(doc, { kind: "request", title: "Transport pour la réunion", contact: "Alice" });
+setHelpPostClosed(doc, help, true);
+assert.equal(doc.helpPosts[help].closed, true);
+assert.throws(() => addHelpPost(doc, { kind: "invalid", title: "Test" }));
 
 const meeting = addMeeting(doc, { title: "CA septembre", date: "2026-09-27" });
 addAgendaItem(doc, meeting, "Budget");
@@ -63,5 +73,6 @@ assert.equal(legacyMeeting.title, "Ancien CA");
 assert.equal(Object.keys(legacyMeeting.proposals).length, 1);
 assert.equal(Object.keys(Object.values(legacyMeeting.proposals)[0].contributions).length, 1);
 assert.equal(Object.values(legacy.actions)[0].meetingId, legacyMeeting.id);
+assert.deepEqual(ensureState(legacy).helpPosts, {});
 
-console.log("Tests domaine Verger v0.3 : OK");
+console.log("Tests domaine Verger : OK");

@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export const DECISION_METHODS = Object.freeze({
   consent: "Consentement",
@@ -30,6 +30,7 @@ export function createInitialState(name = "Mon association") {
     actions: {},
     events: {},
     volunteerNeeds: {},
+    helpPosts: {},
     consultations: {},
     alerts: {},
     metadata: {
@@ -45,10 +46,11 @@ export function ensureState(doc) {
   if (!doc.organization) {
     doc.organization = { id: newId("org"), name: "Mon association", description: "", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
   }
-  for (const key of ["members", "meetings", "actions", "events", "volunteerNeeds", "consultations", "alerts"]) {
+  for (const key of ["members", "meetings", "actions", "events", "volunteerNeeds", "helpPosts", "consultations", "alerts"]) {
     if (!doc[key] || typeof doc[key] !== "object") doc[key] = {};
   }
   if (!doc.metadata) doc.metadata = { createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+  if (doc.schemaVersion < SCHEMA_VERSION) doc.schemaVersion = SCHEMA_VERSION;
   return doc;
 }
 
@@ -84,11 +86,47 @@ export function addMember(doc, { name, role = "Membre", contact = "" }) {
     name: trimmed.slice(0, 120),
     role: String(role || "Membre").trim().slice(0, 120),
     contact: String(contact || "").trim().slice(0, 180),
+    welcome: { introduced: false, documents: false, firstAction: false },
     archived: false,
     createdAt: new Date().toISOString(),
   };
   touch(doc);
   return id;
+}
+
+export const WELCOME_STEPS = Object.freeze({ introduced: "Présentation faite", documents: "Documents transmis", firstAction: "Première action proposée" });
+
+export function setWelcomeStep(doc, memberId, step, done) {
+  const member = doc.members?.[memberId];
+  if (!member || member.archived) throw new Error("Membre introuvable");
+  if (!Object.hasOwn(WELCOME_STEPS, step)) throw new Error("Étape d’accueil inconnue");
+  if (!member.welcome) member.welcome = { introduced: false, documents: false, firstAction: false };
+  member.welcome[step] = Boolean(done);
+  member.updatedAt = new Date().toISOString();
+  touch(doc);
+}
+
+export function addHelpPost(doc, { kind, title, details = "", contact = "" }) {
+  if (!["request", "offer"].includes(kind)) throw new Error("Type d’entraide invalide");
+  const trimmed = String(title || "").trim();
+  if (!trimmed) throw new Error("Un titre est obligatoire");
+  const id = newId("help");
+  doc.helpPosts[id] = {
+    id, kind, title: trimmed.slice(0, 240),
+    details: String(details || "").trim().slice(0, 2000),
+    contact: String(contact || "").trim().slice(0, 180),
+    closed: false, archived: false, createdAt: new Date().toISOString(),
+  };
+  touch(doc);
+  return id;
+}
+
+export function setHelpPostClosed(doc, id, closed) {
+  const post = doc.helpPosts?.[id];
+  if (!post || post.archived) throw new Error("Annonce introuvable");
+  post.closed = Boolean(closed);
+  post.updatedAt = new Date().toISOString();
+  touch(doc);
 }
 
 export function addMeeting(doc, { title, date = "" }) {

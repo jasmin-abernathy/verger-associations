@@ -59,6 +59,7 @@ export function changeDoc(callback) {
 export function openImportedDocument(data) {
   const imported = repo.create();
   imported.change((draft) => Object.assign(draft, data));
+  imported.change((draft) => ensureState(draft));
   handle = imported;
   localStorage.setItem(STORAGE_KEYS.rootDoc, handle.url);
   document.location.hash = handle.url;

@@ -3,12 +3,15 @@ import {
   addAgendaItem,
   addContribution,
   addEvent,
+  addHelpPost,
   addMeeting,
   addMember,
   addProposal,
   addVolunteerNeed,
   exportPortableJson,
   recordDecision,
+  setHelpPostClosed,
+  setWelcomeStep,
 } from "./domain.js";
 import { slug } from "./helpers.js";
 import { exportMeetingMarkdown, importAnyJson } from "./portability.js";
@@ -116,6 +119,9 @@ function handleForm(form) {
     case "volunteer":
       mutate((doc) => addVolunteerNeed(doc, values), "Besoin bénévole ajouté");
       break;
+    case "help":
+      mutate((doc) => addHelpPost(doc, values), "Annonce ajoutée");
+      break;
     case "organization":
       mutate((doc) => {
         doc.organization.name = String(values.name || "").trim().slice(0, 180) || "Mon association";
@@ -163,6 +169,14 @@ function closeVolunteer(id) {
     need.closed = true;
     need.updatedAt = new Date().toISOString();
   }, "Besoin bénévole clôturé");
+}
+
+function toggleWelcome(input) {
+  mutate((doc) => setWelcomeStep(doc, input.dataset.memberId, input.dataset.welcomeStep, input.checked), "Accueil mis à jour");
+}
+
+function toggleHelp(button) {
+  mutate((doc) => setHelpPostClosed(doc, button.dataset.id, button.dataset.closed === "true"), "Annonce mise à jour");
 }
 
 function downloadMeetingMarkdown(meetingId) {
@@ -245,6 +259,7 @@ document.addEventListener("change", (event) => {
   const target = event.target;
   if (target.matches?.("[data-toggle-agenda]")) toggleAgenda(target);
   if (target.matches?.("[data-toggle-action]")) toggleAction(target);
+  if (target.matches?.("[data-welcome-step]")) toggleWelcome(target);
 });
 
 document.addEventListener("click", (event) => {
@@ -252,6 +267,7 @@ document.addEventListener("click", (event) => {
   if (!button) return;
   const action = button.dataset.action;
   if (action === "close-volunteer") closeVolunteer(button.dataset.id);
+  if (action === "toggle-help") toggleHelp(button);
   if (action === "export-meeting") downloadMeetingMarkdown(button.dataset.id);
   if (action === "copy-link") copyDocumentLink();
   if (action === "export") downloadExport();

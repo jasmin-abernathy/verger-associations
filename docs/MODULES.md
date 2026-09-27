@@ -44,21 +44,21 @@ Les modules partagent désormais **le même document métier**. Ils ne doivent p
 - événement lié ;
 - clôture du besoin.
 
+## Socle v0.4 en cours
+
+### Accueil (première version)
+
+- trois étapes partagées par membre : présentation, documents transmis, première action proposée ;
+- pas de transmission automatique de fichiers ou d'invitation.
+
+### Entraide (première version)
+
+- demandes et offres textuelles ;
+- contact facultatif visible dans l'espace commun ;
+- clôture et réouverture ;
+- mise en relation automatisée reportée.
+
 ## Priorité suivante
-
-### Accueil
-
-- parcours d’arrivée ;
-- documents ;
-- contacts ;
-- premières tâches.
-
-### Entraide
-
-- demandes ;
-- offres ;
-- mise en relation ;
-- clôture.
 
 ### Consultations
 
