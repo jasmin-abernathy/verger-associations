@@ -9,6 +9,7 @@ services:
       VERGER_AUTH_DB: /data/authority.sqlite
       VERGER_COOKIE_SECURE: ${VERGER_COOKIE_SECURE:-true}
       VERGER_ALLOWED_ORIGINS: ${VERGER_ALLOWED_ORIGINS:-}
+      VERGER_NATIVE_ORIGINS: ${VERGER_NATIVE_ORIGINS:-https://localhost}
     volumes:
       - ./data:/data
     ports:

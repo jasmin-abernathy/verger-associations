@@ -1,7 +1,7 @@
 {
   "name": "@verger-associations/pwa",
   "private": true,
-  "version": "0.3.0-alpha.1",
+  "version": "0.4.0-alpha.1",
   "type": "module",
   "engines": {
     "node": ">=22.13"
@@ -11,16 +11,25 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "node tests/domain.test.mjs && node tests/majority-judgment.test.mjs",
-    "check": "node --check src/domain.js && node --check src/main.js && node --check src/views.js && node --check src/consultations-api.js && node --check src/majority-judgment.js && npm test"
+    "check": "node --check src/domain.js && node --check src/main.js && node --check src/views.js && node --check src/consultations-api.js && node --check src/platform.js && node --check src/majority-judgment.js && npm test",
+    "android:init": "bash scripts/init-android.sh",
+    "android:sync": "npm run build && npx cap sync android",
+    "android:open": "npx cap open android",
+    "android:apk:debug": "npm run android:sync && cd android && ./gradlew assembleDebug",
+    "android:aab:debug": "npm run android:sync && cd android && ./gradlew bundleDebug",
+    "android:doctor": "npx cap doctor"
   },
   "dependencies": {
     "@automerge/automerge-repo": "2.5.6",
     "@automerge/automerge-repo-network-broadcastchannel": "2.5.6",
     "@automerge/automerge-repo-network-websocket": "2.5.6",
-    "@automerge/automerge-repo-storage-indexeddb": "2.5.6"
+    "@automerge/automerge-repo-storage-indexeddb": "2.5.6",
+    "@capacitor/core": "8.5.2",
+    "@capacitor/android": "8.5.2"
   },
   "devDependencies": {
     "vite": "8.0.14",
-    "vite-plugin-wasm": "3.6.0"
+    "vite-plugin-wasm": "3.6.0",
+    "@capacitor/cli": "8.5.2"
   }
 }

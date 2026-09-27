@@ -19,6 +19,10 @@ const ALLOWED_ORIGINS = String(process.env.VERGER_ALLOWED_ORIGINS || "")
   .split(",")
   .map((value) => value.trim())
   .filter(Boolean);
+const NATIVE_ORIGINS = String(process.env.VERGER_NATIVE_ORIGINS || "https://localhost")
+  .split(",")
+  .map((value) => value.trim())
+  .filter(Boolean);
 
 if (!SYNC_TOKEN || SYNC_TOKEN.length < 24) {
   console.error("VERGER_SYNC_TOKEN doit être défini avec au moins 24 caractères.");
@@ -43,7 +47,12 @@ const repo = new Repo({
 
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
-mountAuthorityApi(app, { db: authorityDb, cookieSecure: COOKIE_SECURE, allowedOrigins: ALLOWED_ORIGINS });
+mountAuthorityApi(app, {
+  db: authorityDb,
+  cookieSecure: COOKIE_SECURE,
+  allowedOrigins: ALLOWED_ORIGINS,
+  nativeOrigins: NATIVE_ORIGINS,
+});
 app.get("/health", (_request, response) => response.json({ ok: true, service: "verger-sync" }));
 app.get("/", (_request, response) => response.type("text/plain").send("Verger Sync\n"));
 

@@ -116,3 +116,30 @@ unset VERGER_BOOTSTRAP_PASSWORD
 - pas de vote secret ni d’anonymat ;
 - sauvegarde/restauration de `authority.sqlite` à documenter avant pilote réel ;
 - le rôle de compte est distinct du rôle métier libre d’une fiche membre.
+
+
+## Application Android Capacitor
+
+L’APK se connecte directement à ce service et n’utilise pas le proxy de développement Vite.
+
+Origine native par défaut :
+
+```text
+https://localhost
+```
+
+Configuration serveur :
+
+```bash
+VERGER_NATIVE_ORIGINS=https://localhost
+```
+
+Les endpoints `/api/v1/native/login` et `/api/v1/native/invitations/accept` renvoient une session Bearer à l’application. Les autres endpoints authentifiés acceptent ensuite :
+
+```http
+Authorization: Bearer <session>
+```
+
+La PWA web continue d’utiliser son cookie `HttpOnly`.
+
+Voir `../../docs/SERVER-ANDROID.md`.

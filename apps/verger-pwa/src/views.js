@@ -286,11 +286,16 @@ function settings(state, context) {
     <div class="grid-2">
       <article class="card"><h2>Association</h2><form data-form="organization" class="form"><label>Nom<input name="name" required maxlength="180" value="${e(state.organization.name || "")}"></label><label>Description<textarea name="description" maxlength="1000" rows="3">${e(state.organization.description || "")}</textarea></label><button>Enregistrer</button></form></article>
       <article class="card"><h2>Sauvegarde et partage</h2><p>Le lien contient l’identifiant du document Automerge. Traite-le comme un lien privé.</p><p class="muted">Importer une sauvegarde ouvre un <strong>nouvel espace</strong> et ne remplace pas silencieusement le document courant. L’export JSON contient l’état métier, pas l’historique CRDT Automerge.</p><div class="button-row"><button type="button" data-action="copy-link">Copier le lien du document</button><button type="button" class="secondary" data-action="export">Exporter JSON</button><button type="button" class="secondary" data-action="import">Importer</button><input id="import-file" type="file" accept="application/json,.json" hidden></div></article>
-      <article class="card"><h2>Synchronisation expérimentale</h2><form data-form="sync" class="form"><label>URL WebSocket<input name="url" type="url" placeholder="wss://sync.exemple.fr/sync" value="${e(context.syncUrl)}"></label><label>Jeton<input name="token" type="password" autocomplete="off" value="${e(context.syncToken)}"></label><button>Enregistrer la synchro</button></form><p class="warning">Le jeton partagé protège le pilote, mais ne remplace pas encore des comptes individuels.</p></article>
-      <article class="card"><h2>État technique</h2><dl class="tech"><dt>Document</dt><dd><code>${e(context.docUrl)}</code></dd><dt>Stockage</dt><dd>IndexedDB local</dd><dt>Conflits</dt><dd>Automerge CRDT</dd><dt>Réseau</dt><dd>${context.syncUrl ? "Local + WebSocket" : "Local uniquement"}</dd></dl></article>
+      <article class="card"><h2>Serveur Verger</h2><form data-form="sync" class="form">
+        <label>API comptes et consultations<input name="apiUrl" type="text" inputmode="url" autocapitalize="none" spellcheck="false" placeholder="https://verger.exemple.fr/api/v1" value="${e(context.apiUrl)}"></label>
+        <label>Synchronisation WebSocket<input name="url" type="url" placeholder="wss://verger.exemple.fr/sync" value="${e(context.syncUrl)}"></label>
+        <label>Jeton Sync<input name="token" type="password" autocomplete="off" value="${e(context.syncToken)}"></label>
+        <label>URL publique du Verger <span class="muted">(pour partager des résultats)</span><input name="publicWebUrl" type="url" placeholder="https://verger.exemple.fr/" value="${e(context.publicWebUrl)}"></label>
+        <button>Enregistrer le serveur</button>
+      </form><p class="warning">Le jeton WebSocket reste une protection de pilote. Les comptes de consultations utilisent une session séparée.${context.nativePlatform ? " Dans l’APK debug, la connexion au compte est volontairement perdue après un redémarrage complet." : ""}</p></article>
+      <article class="card"><h2>État technique</h2><dl class="tech"><dt>Plateforme</dt><dd>${context.nativePlatform ? `Application ${e(context.platformName)}` : "Web / PWA"}</dd><dt>Document</dt><dd><code>${e(context.docUrl)}</code></dd><dt>Stockage</dt><dd>IndexedDB local</dd><dt>Conflits</dt><dd>Automerge CRDT</dd><dt>API</dt><dd>${context.apiUrl ? e(context.apiUrl) : "Non configurée"}</dd><dt>Réseau</dt><dd>${context.syncUrl ? "Local + WebSocket" : "Local uniquement"}</dd></dl></article>
     </div>`;
 }
-
 function archivedRecords(map = {}) {
   return Object.values(map)
     .filter((item) => item?.archived)

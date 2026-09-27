@@ -1,0 +1,12 @@
+{
+  "appId": "org.lepotager.verger.associations",
+  "appName": "Verger Associations",
+  "webDir": "dist",
+  "server": {
+    "hostname": "localhost",
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}

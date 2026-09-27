@@ -1,6 +1,6 @@
 # Feuille de route
 
-## Avancement global vers un premier pilote autonome : 50 %
+## Avancement global vers un premier pilote autonome : 55 %
 
 Le pourcentage a été recalibré lors du pivot v0.3 : le prototype Webxdc a validé le métier, mais le produit cible devient désormais une PWA autonome. La baisse apparente ne signifie pas que le travail v0.2 est perdu : son modèle et ses tests servent de référence de migration.
 
@@ -50,6 +50,17 @@ Le pourcentage a été recalibré lors du pivot v0.3 : le prototype Webxdc a val
   - [ ] tester clavier, zoom 200 % et lecteur d’écran.
 
 - [ ] **55–75 % — Pilote autonome**
+  - [x] choisir Capacitor pour conserver le même code PWA/Android ;
+  - [x] préparer la configuration Capacitor Android 8.5.2 ;
+  - [x] ajouter URLs API/Sync/Public configurables dans le client ;
+  - [x] ajouter une session Bearer dédiée à l’application native ;
+  - [x] conserver la session native en mémoire seulement pour le premier debug ;
+  - [x] autoriser explicitement l’origine Capacitor côté serveur ;
+  - [ ] mettre à jour le lockfile npm après ajout de Capacitor ;
+  - [ ] générer et versionner le dossier Android avec `npm run android:init` ;
+  - [ ] produire le premier APK debug ;
+  - [ ] connecter l’APK à une instance HTTPS/WSS réelle ;
+  - [ ] tester stockage local, hors-ligne et reconnexion sur téléphone ;
   - déployer la PWA sur un hébergement pilote ;
   - déployer Verger Sync derrière TLS ;
   - accompagner 4 à 7 participants ;
@@ -73,7 +84,9 @@ Le pourcentage a été recalibré lors du pivot v0.3 : le prototype Webxdc a val
 
 ## Prochaine étape concrète
 
-Construire `apps/verger-pwa` avec ses dépendances Automerge, corriger les éventuels écarts d’API au build, puis exécuter le scénario suivant :
+Depuis `apps/verger-pwa`, exécuter `npm install` pour intégrer Capacitor au lockfile, puis `npm run android:init` afin de générer le projet Gradle Android. Produire ensuite un APK debug avec `npm run android:apk:debug`.
+
+Sur l’APK, exécuter le scénario suivant :
 
 1. créer une association ;
 2. ajouter deux membres ;

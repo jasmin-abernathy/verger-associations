@@ -20,9 +20,24 @@ import { parseCookies } from "./authority-security.js";
 
 const COOKIE = "verger_session";
 
-export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins = [] }) {
+export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins = [], nativeOrigins = [] }) {
+  const mutationOrigins = [...new Set([...allowedOrigins, ...nativeOrigins])];
+
   app.use("/api/v1", (request, response, next) => {
-    if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method) && !sameOrigin(request, allowedOrigins)) {
+    const origin = normalizedOrigin(request.headers.origin);
+    if (origin && nativeOrigins.includes(origin)) {
+      response.setHeader("Access-Control-Allow-Origin", origin);
+      response.setHeader("Vary", "Origin");
+      response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+      response.setHeader("Access-Control-Max-Age", "600");
+      if (request.method === "OPTIONS") {
+        response.status(204).end();
+        return;
+      }
+    }
+
+    if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method) && !sameOrigin(request, mutationOrigins)) {
       response.status(403).json({ error: "origin_rejected", message: "Origine de requête refusée" });
       return;
     }
@@ -39,10 +54,18 @@ export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins
     } catch (error) { next(error); }
   });
 
+  app.post("/api/v1/native/login", requireNativeOrigin(nativeOrigins), (request, response, next) => {
+    try {
+      const account = authenticateAccount(db, request.body || {});
+      const session = createSession(db, account);
+      response.json({ account, sessionToken: session.token, expiresAt: session.expiresAt });
+    } catch (error) { next(error); }
+  });
+
   app.post("/api/v1/logout", withSession(db), (request, response, next) => {
     try {
       revokeSession(db, request.sessionToken);
-      clearSessionCookie(response, cookieSecure);
+      if (request.sessionKind === "cookie") clearSessionCookie(response, cookieSecure);
       response.json({ ok: true });
     } catch (error) { next(error); }
   });
@@ -64,6 +87,14 @@ export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins
       const session = createSession(db, account);
       setSessionCookie(response, session.token, session.expiresAt, cookieSecure);
       response.status(201).json({ account });
+    } catch (error) { next(error); }
+  });
+
+  app.post("/api/v1/native/invitations/accept", requireNativeOrigin(nativeOrigins), (request, response, next) => {
+    try {
+      const account = acceptInvitation(db, request.body || {});
+      const session = createSession(db, account);
+      response.status(201).json({ account, sessionToken: session.token, expiresAt: session.expiresAt });
     } catch (error) { next(error); }
   });
 
@@ -128,15 +159,26 @@ export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins
 
 function withSession(db) {
   return (request, response, next) => {
-    const token = parseCookies(request.headers.cookie)[COOKIE] || "";
-    const account = accountFromSessionToken(db, token);
+    const session = sessionTokenFromRequest(request);
+    const account = accountFromSessionToken(db, session.token);
     if (!account) {
       response.status(401).json({ error: "authentication_required", message: "Authentification requise" });
       return;
     }
     request.account = account;
-    request.sessionToken = token;
+    request.sessionToken = session.token;
+    request.sessionKind = session.kind;
     next();
+  };
+}
+
+export function sessionTokenFromRequest(request) {
+  const authorization = String(request?.headers?.authorization || "").trim();
+  const match = /^Bearer\s+(.+)$/i.exec(authorization);
+  if (match?.[1]) return { token: match[1].trim(), kind: "bearer" };
+  return {
+    token: parseCookies(request?.headers?.cookie)[COOKIE] || "",
+    kind: "cookie",
   };
 }
 
@@ -186,3 +228,20 @@ function sameOrigin(request, allowedOrigins = []) {
   }
 }
 
+
+function requireNativeOrigin(nativeOrigins) {
+  return (request, response, next) => {
+    const origin = normalizedOrigin(request.headers.origin);
+    if (!origin || !nativeOrigins.includes(origin)) {
+      response.status(403).json({ error: "native_origin_rejected", message: "Origine native refusée" });
+      return;
+    }
+    next();
+  };
+}
+
+function normalizedOrigin(value) {
+  if (!value) return "";
+  try { return new URL(String(value)).origin; }
+  catch { return ""; }
+}

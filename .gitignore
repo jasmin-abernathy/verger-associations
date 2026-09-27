@@ -1,3 +1,9 @@
 node_modules/
 dist/
 .verger-sync/
+
+# Capacitor / Android local build outputs
+apps/verger-pwa/android/.gradle/
+apps/verger-pwa/android/build/
+apps/verger-pwa/android/app/build/
+apps/verger-pwa/android/local.properties

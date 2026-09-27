@@ -187,3 +187,19 @@ html[data-public-poll="true"] .topbar { position: static; }
   .option-row { grid-template-columns: 1.7rem minmax(0, 1fr); }
   .option-buttons { grid-column: 2; }
 }
+
+/* Coque native Capacitor */
+html[data-native="true"] .topbar {
+  padding-top: calc(0.7rem + env(safe-area-inset-top));
+  padding-left: calc(1rem + env(safe-area-inset-left));
+  padding-right: calc(1rem + env(safe-area-inset-right));
+}
+html[data-native="true"] .sidebar {
+  padding-left: calc(1rem + env(safe-area-inset-left));
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+}
+html[data-native="true"] main {
+  padding-right: max(clamp(1rem, 3vw, 2rem), env(safe-area-inset-right));
+  padding-bottom: max(clamp(1rem, 3vw, 2rem), env(safe-area-inset-bottom));
+  padding-left: max(clamp(1rem, 3vw, 2rem), env(safe-area-inset-left));
+}

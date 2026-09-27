@@ -127,3 +127,19 @@ Le service worker ignore explicitement les requêtes `/api/`. Les sessions, list
 Les réponses aux consultations ne disposent volontairement d’aucune file locale : si le serveur ne confirme pas l’écriture, l’interface indique que la réponse n’a pas été comptabilisée.
 
 Les codes d’invitation sont affichés comme secrets à copier manuellement et ne sont pas placés automatiquement dans une URL.
+
+
+## Application Android v0.4
+
+La coque Android utilise Capacitor et charge le bundle Vite embarqué ; elle n’affiche pas le site distant comme contenu principal.
+
+Pour l’authentification des consultations :
+- la PWA web conserve les cookies `HttpOnly` ;
+- l’application native utilise un Bearer token de session ;
+- le token natif du premier debug est conservé **uniquement en mémoire** et disparaît au redémarrage/rechargement complet ;
+- il n’est pas écrit dans `localStorage` ;
+- la persistance de session ne doit être ajoutée qu’avec un stockage natif sécurisé fondé sur Android Keystore ou une brique équivalente auditée.
+
+Le serveur autorise explicitement l’origine Capacitor `https://localhost` via `VERGER_NATIVE_ORIGINS`. Ne pas remplacer cette liste par un CORS `*` pour les opérations authentifiées.
+
+Le jeton WebSocket Automerge reste un secret de pilote distinct : il est encore stocké dans les réglages locaux et transmis en query string. L’APK ne résout donc pas à lui seul le chantier global E2EE/révocation.

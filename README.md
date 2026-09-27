@@ -2,7 +2,7 @@
 
 Suite libre, sobre et **local-first** d’outils numériques destinés aux associations, collectifs, SCOP et SCIC.
 
-> **Statut : pivot v0.3 en cours.** Verger Associations devient une PWA autonome : une seule application pour les membres, réunions, décisions, actions, événements et bénévolat. Le prototype Webxdc v0.2 reste conservé comme référence jusqu’à parité fonctionnelle et validation du nouveau client.
+> **Statut : v0.4 en préparation.** Le même client local-first vise désormais deux sorties : **PWA web** et **application Android Capacitor**. Le prototype Webxdc v0.2 reste conservé comme référence historique.
 
 ## Positionnement
 
@@ -12,7 +12,7 @@ L’objectif est qu’une association puisse utiliser **une seule application**,
 
 ## Architecture cible v0.3
 
-- **PWA Verger Associations** : interface unique installable depuis le navigateur ;
+- **Client Verger Associations** : même interface métier pour la PWA et l’APK Android Capacitor ;
 - **Automerge Repo** : document collaboratif et résolution des modifications concurrentes ;
 - **IndexedDB** : stockage local sur l’appareil ;
 - **BroadcastChannel** : synchronisation locale entre onglets ;
@@ -42,7 +42,7 @@ Le socle v0.3 contient déjà :
 - stockage Automerge/IndexedDB ;
 - synchronisation WebSocket facultative.
 
-Les modules Accueil, Entraide, Consultations, Signalements et Alertes restent à développer après validation du socle.
+Accueil, Entraide et les Consultations vérifiées sont désormais amorcés. Signalements et Alertes restent à cadrer après validation du socle et de la sécurité.
 
 ## Serveur de synchronisation
 
@@ -87,6 +87,8 @@ Une intégration future peut ajouter des liens, notifications ou exports entre l
 ## Documentation
 
 - [Architecture v0.3](docs/ARCHITECTURE-V03.md)
+- [Application Android](docs/ANDROID.md)
+- [Déploiement serveur Android](docs/SERVER-ANDROID.md)
 - [Migration du prototype](docs/MIGRATION-V03.md)
 - [Architecture historique](docs/ARCHITECTURE.md)
 - [Vision et périmètre](docs/VISION.md)

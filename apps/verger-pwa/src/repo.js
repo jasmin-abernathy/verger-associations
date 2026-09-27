@@ -3,6 +3,7 @@ import { BroadcastChannelNetworkAdapter } from "@automerge/automerge-repo-networ
 import { WebSocketClientAdapter } from "@automerge/automerge-repo-network-websocket";
 import { IndexedDBStorageAdapter } from "@automerge/automerge-repo-storage-indexeddb";
 import { createInitialState, ensureState, touch } from "./domain.js";
+import { getSyncToken, getSyncUrl, saveServerSettings } from "./platform.js";
 
 export const STORAGE_KEYS = Object.freeze({
   rootDoc: "verger-root-doc-v03",
@@ -11,8 +12,8 @@ export const STORAGE_KEYS = Object.freeze({
   accessible: "verger-accessible-v03",
 });
 
-export const syncUrl = localStorage.getItem(STORAGE_KEYS.syncUrl) || "";
-export const syncToken = localStorage.getItem(STORAGE_KEYS.syncToken) || "";
+export const syncUrl = getSyncUrl();
+export const syncToken = getSyncToken();
 
 const network = [new BroadcastChannelNetworkAdapter({ channelName: "verger-associations-v03" })];
 if (syncUrl) network.push(new WebSocketClientAdapter(withSyncToken(syncUrl, syncToken)));
@@ -70,8 +71,7 @@ export function openImportedDocument(data) {
 }
 
 export function saveSyncSettings(url, token) {
-  localStorage.setItem(STORAGE_KEYS.syncUrl, String(url || "").trim());
-  localStorage.setItem(STORAGE_KEYS.syncToken, String(token || "").trim());
+  saveServerSettings({ syncUrl: url, syncToken: token });
 }
 
 function withSyncToken(rawUrl, token) {

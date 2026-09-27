@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { openAuthorityDatabase } from "./authority-db.js";
+import { sessionTokenFromRequest } from "./authority-api.js";
 import {
   acceptInvitation,
   accountFromSessionToken,
@@ -67,6 +68,14 @@ assert.throws(() => authenticateAccount(db, {
   password: "wrong-password-123",
 }), (error) => error.status === 401);
 const session = createSession(db, admin, { ttlMs: 60_000 });
+assert.deepEqual(
+  sessionTokenFromRequest({ headers: { authorization: `Bearer ${session.token}` } }),
+  { token: session.token, kind: "bearer" },
+);
+assert.deepEqual(
+  sessionTokenFromRequest({ headers: { cookie: `verger_session=${encodeURIComponent(session.token)}` } }),
+  { token: session.token, kind: "cookie" },
+);
 assert.equal(accountFromSessionToken(db, session.token).id, admin.id);
 revokeSession(db, session.token);
 assert.equal(accountFromSessionToken(db, session.token), null);

@@ -32,6 +32,13 @@ import {
 } from "./repo.js";
 import { renderView } from "./views.js";
 import {
+  getApiBaseUrl,
+  getPublicWebUrl,
+  nativePlatform,
+  platformName,
+  saveServerSettings,
+} from "./platform.js";
+import {
   acceptInvitation as acceptAccountInvitation,
   cancelPoll as cancelAuthorityPoll,
   closePoll as closeAuthorityPoll,
@@ -73,6 +80,9 @@ let authorityState = {
   publicResults: null,
 };
 if (publicPollId) document.documentElement.dataset.publicPoll = "true";
+document.documentElement.dataset.native = String(nativePlatform);
+document.documentElement.dataset.platform = platformName;
+if (nativePlatform) installButton.hidden = true;
 
 function showToast(message, isError = false) {
   clearTimeout(toastTimer);
@@ -83,7 +93,16 @@ function showToast(message, isError = false) {
 }
 
 function context() {
-  return { syncUrl, syncToken, docUrl: handle.url, authority: authorityState };
+  return {
+    syncUrl,
+    syncToken,
+    apiUrl: getApiBaseUrl(),
+    publicWebUrl: getPublicWebUrl(),
+    docUrl: handle.url,
+    nativePlatform,
+    platformName,
+    authority: authorityState,
+  };
 }
 
 function render() {
@@ -182,8 +201,9 @@ async function handleForm(form) {
       }, "Association mise à jour");
       break;
     case "sync":
+      saveServerSettings({ apiUrl: values.apiUrl, publicWebUrl: values.publicWebUrl });
       saveSyncSettings(values.url, values.token);
-      showToast("Réglages enregistrés · recharge de l’application");
+      showToast("Serveur enregistré · recharge de l’application");
       setTimeout(() => location.reload(), 300);
       return;
     default:
@@ -433,7 +453,10 @@ async function copyText(value, success) {
 }
 
 function publicPollLink(id) {
-  const url = new URL(location.origin + location.pathname);
+  const configured = getPublicWebUrl();
+  if (nativePlatform && !configured) return "";
+  const base = configured || (location.origin + location.pathname);
+  const url = new URL(base);
   url.searchParams.set("publicPoll", id);
   return url.toString();
 }
@@ -587,7 +610,11 @@ document.addEventListener("click", (event) => {
   if (action === "close-poll") void closeSelectedPoll(button.dataset.id);
   if (action === "account-logout") void logOutAuthority();
   if (action === "copy-invitation-code") void copyText(button.dataset.code, "Code d’invitation copié");
-  if (action === "copy-public-poll-link") void copyText(publicPollLink(button.dataset.id), "Lien public copié");
+  if (action === "copy-public-poll-link") {
+    const link = publicPollLink(button.dataset.id);
+    if (!link) showToast("Configurez l’URL publique du Verger dans Réglages.", true);
+    else void copyText(link, "Lien public copié");
+  }
   if (action === "export-meeting") downloadMeetingMarkdown(button.dataset.id);
   if (action === "copy-link") copyDocumentLink();
   if (action === "export") downloadExport();
@@ -605,6 +632,7 @@ accessibleButton.addEventListener("click", () => setAccessible(document.document
 try { setAccessible(localStorage.getItem(STORAGE_KEYS.accessible) === "true"); } catch { setAccessible(false); }
 
 window.addEventListener("beforeinstallprompt", (event) => {
+  if (nativePlatform) return;
   event.preventDefault();
   installPrompt = event;
   installButton.hidden = false;
@@ -623,6 +651,6 @@ handle.on("change", render);
 render();
 void loadAuthority();
 
-if ("serviceWorker" in navigator && location.protocol !== "file:") {
+if (!nativePlatform && "serviceWorker" in navigator && location.protocol !== "file:") {
   window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch((error) => console.warn("Service worker indisponible", error)));
 }

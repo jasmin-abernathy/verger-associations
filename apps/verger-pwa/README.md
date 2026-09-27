@@ -1,4 +1,4 @@
-# Verger Associations — PWA local-first v0.3
+# Verger Associations — client local-first web + Android v0.4
 
 Cette application devient le **client principal** de Verger Associations. Le prototype Webxdc `apps/reunions-decisions` reste conservé comme référence métier et comme preuve de concept, mais Delta Chat/Webxdc n’est plus une dépendance du produit cible.
 
@@ -118,3 +118,30 @@ Les consultations nécessitant de vrais droits utilisent `/api/v1` :
 En développement, Vite redirige `/api` vers `http://localhost:3030`.
 
 Les anciennes consultations stockées dans Automerge ne sont plus des votes actifs : elles restent visibles comme archives expérimentales non vérifiées.
+
+
+## Android / Capacitor
+
+Le même frontend peut maintenant être empaqueté comme application Android avec Capacitor 8.5.2.
+
+Après avoir récupéré ce changement, le `package-lock.json` existant ne contient pas encore les dépendances Capacitor. Une première installation doit donc être faite avec :
+
+```bash
+npm install
+```
+
+Puis :
+
+```bash
+npm run android:init
+npm run android:apk:debug
+```
+
+Le dossier Android généré doit ensuite être versionné ; seuls ses artefacts locaux de build sont ignorés.
+
+Configuration :
+- `capacitor.config.json` ;
+- `.env.example` pour des URLs embarquées au build ;
+- Réglages de l’application pour saisir/modifier API, WSS et URL publique.
+
+Voir `../../docs/ANDROID.md`.
