@@ -31,8 +31,8 @@ Le pourcentage a été recalibré lors du pivot v0.3 : le prototype Webxdc a val
   - [ ] installer les dépendances npm et produire le premier build PWA ;
   - [ ] vérifier le bundle Automerge/WASM hors ligne ;
   - [ ] tester deux onglets puis deux appareils ;
-  - [ ] importer les données utiles d’un export v0.2 ;
-  - [ ] rétablir l’export Markdown du relevé de réunion dans la PWA ;
+  - [x] importer les données utiles d’un export v0.2 ;
+  - [x] rétablir l’export Markdown du relevé de réunion dans la PWA ;
   - [ ] tester clavier, zoom 200 % et lecteur d’écran.
 
 - [ ] **55–75 % — Pilote autonome**

@@ -8,10 +8,10 @@ import {
   addProposal,
   addVolunteerNeed,
   exportPortableJson,
-  importPortableJson,
   recordDecision,
 } from "./domain.js";
 import { slug } from "./helpers.js";
+import { exportMeetingMarkdown, importAnyJson } from "./portability.js";
 import {
   STORAGE_KEYS,
   changeDoc,
@@ -164,6 +164,26 @@ function closeVolunteer(id) {
   }, "Besoin bénévole clôturé");
 }
 
+function downloadMeetingMarkdown(meetingId) {
+  try {
+    const state = currentDoc();
+    const meeting = state.meetings?.[meetingId];
+    const text = exportMeetingMarkdown(state, meetingId);
+    const file = new Blob([text], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(file);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${slug(meeting?.title || "reunion")}.md`;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    showToast("Relevé Markdown exporté");
+  } catch (error) {
+    showToast(error?.message || "Export impossible", true);
+  }
+}
+
 function downloadExport() {
   const text = exportPortableJson(currentDoc());
   const file = new Blob([text], { type: "application/json;charset=utf-8" });
@@ -180,7 +200,7 @@ function downloadExport() {
 
 async function importExport(file) {
   try {
-    const data = importPortableJson(await file.text());
+    const data = importAnyJson(await file.text());
     changeDoc((draft) => {
       for (const key of Object.keys(draft)) delete draft[key];
       Object.assign(draft, data);
@@ -234,6 +254,7 @@ document.addEventListener("click", (event) => {
   if (!button) return;
   const action = button.dataset.action;
   if (action === "close-volunteer") closeVolunteer(button.dataset.id);
+  if (action === "export-meeting") downloadMeetingMarkdown(button.dataset.id);
   if (action === "copy-link") copyDocumentLink();
   if (action === "export") downloadExport();
   if (action === "import") document.getElementById("import-file")?.click();

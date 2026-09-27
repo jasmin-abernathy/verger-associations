@@ -36,3 +36,7 @@ Il pourra ensuite être déplacé vers un dossier `legacy/` ou archivé avec une
 - exports ;
 - modifications concurrentes sur deux appareils ;
 - navigation clavier et zoom 200 %.
+
+## Migration automatisée disponible
+
+L’import JSON de la PWA reconnaît désormais les exports `schemaVersion: 2` du prototype Webxdc et convertit réunion, ordre du jour, propositions, contributions et actions vers le schéma v0.3. La méthode de décision historique est importée comme `other`, car le prototype v0.2 ne la stockait pas de manière structurée.

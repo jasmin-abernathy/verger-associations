@@ -5,7 +5,7 @@ export function meetingCard(meeting) {
   const agenda = activeRecords(meeting.agenda || {});
   const proposals = activeRecords(meeting.proposals || {});
   return `<article class="card meeting-card">
-    <div class="card-head"><div><h2>${e(meeting.title)}</h2><p class="muted">${formatDate(meeting.date)}</p></div><span class="badge">${proposals.length} proposition${proposals.length > 1 ? "s" : ""}</span></div>
+    <div class="card-head"><div><h2>${e(meeting.title)}</h2><p class="muted">${formatDate(meeting.date)}</p></div><div class="button-row"><button class="secondary" type="button" data-action="export-meeting" data-id="${e(meeting.id)}">Relevé .md</button><span class="badge">${proposals.length} proposition${proposals.length > 1 ? "s" : ""}</span></div></div>
     <details><summary>Ordre du jour (${agenda.length})</summary>
       ${agenda.length ? `<ul class="clean-list">${agenda.map((item) => `<li class="check-row"><input type="checkbox" ${item.done ? "checked" : ""} data-toggle-agenda="${e(item.id)}" data-meeting-id="${e(meeting.id)}" aria-label="Marquer ${e(item.text)} comme traité"><span>${e(item.text)}</span></li>`).join("")}</ul>` : empty("Aucun point.")}
       <form data-form="agenda" data-meeting-id="${e(meeting.id)}" class="form inline"><label>Nouveau point<input name="text" required maxlength="500"></label><button>Ajouter</button></form>

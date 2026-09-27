@@ -17,7 +17,8 @@ Cette application devient le **client principal** de Verger Associations. Le pro
 - Actions liées ou indépendantes ;
 - Événements ;
 - besoins de bénévolat ;
-- export/import JSON portable ;
+- export/import JSON portable, y compris migration d’un export Webxdc v0.2 ;
+- export Markdown d’un relevé de réunion ;
 - mode accessible renforcé ;
 - service worker et manifeste PWA.
 
