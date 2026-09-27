@@ -26,6 +26,23 @@ function testConcurrentUpdatesConverge() {
   assert.equal(left.proposals["proposal-1"].title, "Version Bob");
 }
 
+function testSameParticipantOnTwoDevicesConverges() {
+  const left = Model.createState();
+  const right = Model.createState();
+  const phoneActor = Model.makeActorId("alice@example.test", "phone");
+  const laptopActor = Model.makeActorId("alice@example.test", "laptop");
+  assert.notEqual(phoneActor, laptopActor);
+
+  const phone = operation("proposals", "proposal-1", { title: "Version téléphone" }, 7, phoneActor);
+  const laptop = operation("proposals", "proposal-1", { title: "Version ordinateur" }, 7, laptopActor);
+  [phone, laptop].forEach((patch) => Model.applyPatch(left, patch));
+  [laptop, phone].forEach((patch) => Model.applyPatch(right, patch));
+
+  assert.equal(left.proposals["proposal-1"].title, right.proposals["proposal-1"].title);
+  assert.equal(Model.makeActorId("alice@example.test", "phone"), phoneActor);
+  assert.ok(phoneActor.length <= 180);
+}
+
 function testStaleFieldsCannotOverwriteNewerOnes() {
   const state = Model.createState();
   Model.applyPatch(state, operation("actions", "action-1", { text: "Envoyer le relevé", done: true }, 9));
@@ -97,10 +114,11 @@ function testExportsContainTheDecisionCycle() {
 [
   testReplayIsIdempotent,
   testConcurrentUpdatesConverge,
+  testSameParticipantOnTwoDevicesConverges,
   testStaleFieldsCannotOverwriteNewerOnes,
   testInvalidInputIsIgnored,
   testLegacyPrototypeDataStillLoads,
   testExportsContainTheDecisionCycle,
 ].forEach((test) => test());
 
-console.log("6 tests du modèle réussis.");
+console.log("7 tests du modèle réussis.");

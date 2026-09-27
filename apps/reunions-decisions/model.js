@@ -87,6 +87,12 @@
     };
   }
 
+  function makeActorId(selfAddress, deviceId) {
+    const participant = String(selfAddress || "anonymous").slice(0, 120);
+    const device = String(deviceId || "device").slice(0, 50);
+    return `${participant}#${device}`.slice(0, 180);
+  }
+
   function safeId(value) {
     return (
       typeof value === "string" &&
@@ -285,6 +291,7 @@
     STATUS_LABELS,
     CONTRIBUTION_LABELS,
     createState,
+    makeActorId,
     compareStamps,
     applyPatch,
     records,

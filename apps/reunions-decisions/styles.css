@@ -479,7 +479,6 @@ html[data-verger-accessible="true"] *,html[data-verger-accessible="true"] *::bef
 
 .header-actions{display:flex;align-items:center;justify-content:flex-end;gap:1rem}
 .accessibility-toggle{flex:0 0 auto;white-space:nowrap}
-html[data-site-ref="prestadmin"] [data-site-context]{color:#765d00}
 @media(max-width:760px){
  .header-actions{width:100%;justify-content:space-between;flex-wrap:wrap}
 }
