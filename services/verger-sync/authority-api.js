@@ -168,9 +168,18 @@ function sameOrigin(request) {
   const origin = request.headers.origin;
   if (!origin) return true;
   try {
-    const proto = String(request.headers["x-forwarded-proto"] || (request.socket?.encrypted ? "https" : "http")).split(",")[0].trim();
-    const host = String(request.headers.host || "");
-    return new URL(origin).origin === `${proto}://${host}`;
+    const originUrl = new URL(origin);
+    const forwardedHost = String(request.headers["x-forwarded-host"] || "").split(",")[0].trim();
+    const host = forwardedHost || String(request.headers.host || "").trim();
+    if (!host || originUrl.host !== host) return false;
+
+    const forwardedProto = String(request.headers["x-forwarded-proto"] || "").split(",")[0].trim();
+    if (forwardedProto) return originUrl.protocol === `${forwardedProto}:`;
+    if (request.socket?.encrypted) return originUrl.protocol === "https:";
+
+    // A local development/reverse proxy may terminate HTTPS before forwarding
+    // the request over plain HTTP while preserving the original Host header.
+    return true;
   } catch {
     return false;
   }
