@@ -8,8 +8,9 @@
   },
   "scripts": {
     "start": "node server.js",
-    "check": "node --check auth.js && node --check server.js && node tests.mjs",
-    "test": "node tests.mjs"
+    "check": "node --check auth.js && node --check authority-db.js && node --check authority-security.js && node --check consultations-service.js && node --check authority-api.js && node --check bootstrap-admin.js && node --check server.js && node tests.mjs && node consultations-tests.mjs",
+    "test": "node tests.mjs && node consultations-tests.mjs",
+    "bootstrap-admin": "node bootstrap-admin.js"
   },
   "dependencies": {
     "@automerge/automerge-repo": "2.5.6",

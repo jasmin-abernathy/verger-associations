@@ -68,7 +68,17 @@ Les membres sont volontairement limités à un nom, rôle et contact facultatif 
 
 Les annonces d'entraide et leurs coordonnées facultatives sont visibles par toutes les personnes ayant accès au document commun. L'accueil des membres est également une liste partagée, sans documents joints ni transmission automatisée.
 
-Les consultations du socle v0.4 sont **explicitement nominatives**. Le nom et la réponse sont enregistrés dans le document partagé et peuvent subsister dans l’historique Automerge même après archivage. Une consultation nécessitant un anonymat réel doit utiliser un protocole distinct, conçu et audité pour cet usage.
+Les anciennes consultations du schéma 2 restent des **archives expérimentales non vérifiées** dans Automerge.
+
+Les nouvelles consultations vérifiées utilisent une autorité SQLite séparée du CRDT :
+- compte et rôle vérifiés côté serveur ;
+- mot de passe dérivé avec `scrypt` + sel aléatoire ;
+- sessions et invitations basées sur des secrets aléatoires dont seuls les hashes sont stockés ;
+- choix unique par compte ;
+- clôture autorisée uniquement au créateur ;
+- résultats publics limités aux agrégats.
+
+Ce système n’est **pas E2EE** : le serveur peut lire les comptes et les réponses nominatives. Une consultation anonyme ou secrète nécessite un protocole distinct et audité.
 
 ## Dépendances
 
@@ -95,3 +105,16 @@ Réaliser avec l’association pilote :
 - procédure de départ/perte d’appareil ;
 - choix d’hébergement ;
 - évaluation de la nécessité d’un chiffrement côté client supplémentaire.
+
+
+## Autorité consultations
+
+Le contrat détaillé est dans `CONSULTATIONS-AUTHORITY.md`.
+
+Le pilote suppose que la PWA et `/api/v1` sont présentés sous la même origine au navigateur. Les sessions utilisent un cookie `HttpOnly`, `SameSite=Lax`, `Secure` en production.
+
+Les réponses ne sont considérées comme enregistrées qu’après confirmation serveur. Une file locale hors ligne ne doit jamais être présentée comme comptabilisée.
+
+Le rôle de compte est séparé du rôle métier libre de la fiche membre. Un `memberId` facultatif relie explicitement les deux.
+
+La récupération de compte, la durée de conservation et la sauvegarde/restauration de `authority.sqlite` restent à définir avant un pilote sensible.

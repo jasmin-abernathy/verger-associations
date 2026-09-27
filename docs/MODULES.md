@@ -68,13 +68,22 @@ Les modules partagent désormais **le même document métier**. Ils ne doivent p
 - édition des annonces d’entraide ;
 - archivage et restauration des éléments courants.
 
-### Consultations (première version)
+### Consultations vérifiées
 
-- une question textuelle ;
-- réponses **nominatives uniquement** ;
-- clôture et réouverture ;
-- archivage/restauration ;
-- aucune promesse d’anonymat : les réponses vivent dans le document Automerge partagé et son historique.
+La première version CRDT reste uniquement comme **archive expérimentale non vérifiée**.
+
+La cible pilote utilise désormais l’autorité serveur décrite dans `CONSULTATIONS-AUTHORITY.md` :
+
+- comptes sur invitation ;
+- rôles fixes : administrateur, animateur, membre, lecteur ;
+- question à choix unique avec 2 à 8 réponses définies par le créateur ;
+- une réponse par compte, modifiable tant que la consultation est ouverte ;
+- choix et visibilité figés après la première réponse ;
+- clôture uniquement par le compte créateur ;
+- annulation administrative distincte et auditée ;
+- résultats agrégés après clôture ;
+- publication publique facultative, annoncée avant les réponses ;
+- aucune réponse individuelle dans Automerge ni sur la page publique.
 
 ## Priorité suivante
 

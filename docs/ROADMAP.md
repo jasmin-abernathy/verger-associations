@@ -36,7 +36,11 @@ Le pourcentage a été recalibré lors du pivot v0.3 : le prototype Webxdc a val
   - [x] importer les données utiles d’un export v0.2 ;
   - [x] rétablir l’export Markdown du relevé de réunion dans la PWA ;
   - [x] ajouter édition + archivage/restauration des membres, actions, événements et annonces ;
-  - [x] ajouter des consultations nominatives simples ;
+  - [x] conserver les anciennes consultations CRDT comme archives expérimentales ;
+  - [x] définir le contrat de consultations à choix unique avec comptes et rôles fixes ;
+  - [x] implémenter l’autorité SQLite comptes/invitations/sessions/consultations côté serveur ;
+  - [x] tester localement les règles d’autorisation et l’agrégation publique ;
+  - [ ] brancher la PWA sur l’API de consultations vérifiées ;
   - [ ] tester clavier, zoom 200 % et lecteur d’écran.
 
 - [ ] **55–75 % — Pilote autonome**
