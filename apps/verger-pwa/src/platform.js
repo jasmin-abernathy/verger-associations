@@ -29,7 +29,7 @@ export function getSyncUrl() {
 }
 
 export function getSyncToken() {
-  return readLocal(KEYS.syncToken) || String(import.meta.env.VITE_VERGER_SYNC_TOKEN || "").trim();
+  return readLocal(KEYS.syncToken);
 }
 
 export function saveServerSettings(settings = {}) {

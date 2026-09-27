@@ -7,3 +7,6 @@ apps/verger-pwa/android/.gradle/
 apps/verger-pwa/android/build/
 apps/verger-pwa/android/app/build/
 apps/verger-pwa/android/local.properties
+apps/verger-pwa/android/**/*.jks
+apps/verger-pwa/android/**/*.keystore
+apps/verger-pwa/android/**/google-services.json

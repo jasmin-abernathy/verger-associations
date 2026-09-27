@@ -1,6 +1,6 @@
 # Verger Associations — Android / Capacitor
 
-Statut : **socle Android v0.4 préparé, projet Gradle pas encore généré dans le dépôt**.
+Statut : **projet Android généré par Capacitor 8.5.2**. Build Vite et tests locaux réussis ; APK debug non compilé dans cet environnement faute d'accès à la distribution Gradle et au SDK Android.
 
 ## Choix
 
@@ -55,7 +55,7 @@ npm install
 npm run android:init
 ```
 
-Le premier `npm install` est obligatoire après l’ajout de Capacitor afin de mettre à jour `package-lock.json`.
+Le lockfile Capacitor est désormais présent ; utiliser `npm ci` pour repartir d'une installation identique.
 
 Le script :
 
@@ -137,7 +137,9 @@ Conséquences :
 - aucun token de compte n’est écrit en clair dans `localStorage` ;
 - cette limitation est volontaire tant que le stockage via Android Keystore n’est pas implémenté et testé.
 
-Le jeton WebSocket Automerge du pilote reste, lui, une configuration de déploiement existante et n’est pas encore remplacé par l’identité individuelle.
+Le jeton WebSocket Automerge du pilote reste, lui, une configuration locale existante et n’est pas encore remplacé par l’identité individuelle. Ne pas l'injecter dans un build avec une variable `VITE_` : elle serait visible dans l'APK. Il reste stocké localement dans les réglages et doit être considéré comme accessible sur un appareil compromis.
+
+Le manifeste Android désactive la sauvegarde automatique de l'application. Utiliser l'export JSON manuel pour les données métier ; celui-ci n'inclut pas l'historique Automerge.
 
 ## CORS natif
 
@@ -209,6 +211,4 @@ https://verger.exemple.fr/?publicPoll=<id>
 
 ## Limites actuelles
 
-Le dossier Android n’est pas encore généré, car cette étape nécessite la CLI Capacitor et ses dépendances npm installées dans un environnement de build.
-
-Le code et la configuration nécessaires à cette génération sont déjà préparés dans le dépôt.
+Le projet Android existe. `npm run android:doctor` confirme les versions Capacitor 8.5.2. Le premier `./gradlew assembleDebug` a échoué avant compilation en tentant de télécharger `gradle-8.14.3-all.zip` depuis `services.gradle.org` (réseau indisponible). Refaire `npm run android:apk:debug` sur un poste avec Android SDK et accès à Gradle ; ce n'est pas encore une preuve qu'un APK fonctionne sur téléphone.
