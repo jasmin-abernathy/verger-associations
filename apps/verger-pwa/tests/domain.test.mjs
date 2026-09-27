@@ -91,6 +91,9 @@ const exported = exportPortableJson(doc);
 const imported = importPortableJson(exported);
 assert.equal(imported.organization.name, "Aldebaran test");
 assert.equal(Object.keys(imported.meetings).length, 1);
+assert.equal(Object.keys(imported.helpPosts).length, 1);
+assert.equal(Object.keys(imported.consultations).length, 1);
+assert.equal(imported.schemaVersion, 2);
 assert.throws(() => importPortableJson('{"hello":"world"}'));
 
 const legacy = importAnyJson(JSON.stringify({

@@ -82,3 +82,19 @@ node tests/domain.test.mjs
 ```
 
 Il couvre la création de membres, réunions, ordre du jour, proposition, objection, décision, action, événement, besoin bénévole et l’export/import portable.
+
+## Sauvegarde et restauration
+
+L’export JSON portable contient l’état métier courant et sa version de schéma. Il **ne contient pas l’historique CRDT Automerge**.
+
+Lors d’un import, Verger crée un nouveau document Automerge et bascule vers ce nouvel espace. Le document courant n’est pas écrasé silencieusement.
+
+Procédure recommandée :
+
+1. exporter une sauvegarde JSON ;
+2. conserver le fichier dans un emplacement protégé ;
+3. importer le fichier depuis Réglages ;
+4. vérifier le nom de l’association, les membres, réunions, actions, événements, entraide et consultations ;
+5. conserver temporairement l’ancien lien de document tant que la restauration n’a pas été vérifiée.
+
+Une sauvegarde JSON doit être protégée comme les données qu’elle contient.
