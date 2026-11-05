@@ -7,8 +7,9 @@ const KEYS = Object.freeze({
   syncToken: "verger-sync-token-v03",
 });
 
-export const nativePlatform = Capacitor.isNativePlatform();
-export const platformName = Capacitor.getPlatform();
+export const embeddedSimplex = typeof window !== "undefined" && typeof window.VergerNative?.openChat === "function";
+export const nativePlatform = Capacitor.isNativePlatform() || embeddedSimplex;
+export const platformName = embeddedSimplex ? "android" : Capacitor.getPlatform();
 
 export function getApiBaseUrl() {
   const configured = readLocal(KEYS.apiUrl) || String(import.meta.env.VITE_VERGER_API_URL || "").trim();

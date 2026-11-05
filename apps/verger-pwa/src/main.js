@@ -36,6 +36,7 @@ import {
   getApiBaseUrl,
   getPublicWebUrl,
   nativePlatform,
+  embeddedSimplex,
   platformName,
   saveServerSettings,
 } from "./platform.js";
@@ -102,6 +103,7 @@ function context() {
     docUrl: handle.url,
     nativePlatform,
     platformName,
+    embeddedSimplex,
     authority: authorityState,
     simplexLink: readSimplexLink(localStorage, handle.url),
   };
@@ -611,6 +613,7 @@ document.addEventListener("click", (event) => {
   const button = event.target.closest?.("[data-action]");
   if (!button) return;
   const action = button.dataset.action;
+  if (action === "open-embedded-chat" && embeddedSimplex) { window.VergerNative.openChat(); return; }
   if (action === "copy-simplex-link") void copyText(readSimplexLink(localStorage, handle.url), "Lien SimpleX copié");
   if (action === "close-volunteer") closeVolunteer(button.dataset.id);
   if (action === "toggle-help") toggleHelp(button);

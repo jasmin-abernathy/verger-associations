@@ -32,3 +32,9 @@ test('SimpleX: parcours vide/configuré et confidentialité du lien', () => {
   assert.ok(html.indexOf('Ouvrir l’invitation') < html.indexOf('Modifier le lien'));
   assert.match(html, /data-form="simplex-settings"/);
 });
+
+test('SimpleX embarqué : ouverture interne sans lien externe', () => {
+  const html = renderView('chat', {}, { embeddedSimplex: true });
+  assert.match(html, /data-action="open-embedded-chat"/);
+  assert.doesNotMatch(html, /href=|target=|simplex-settings/);
+});

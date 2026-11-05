@@ -328,6 +328,10 @@ function actionRow(action) {
 }
 
 function chat(_state, context) {
+  if (context.embeddedSimplex) return `${heading("Discussion", "Les échanges restent dans cette application.")}
+    <article class="card"><h2>Votre messagerie</h2><p>Ouvrez les discussions pour créer votre profil, rejoindre le groupe de l’association ou envoyer un message.</p>
+    <button type="button" data-action="open-embedded-chat">Ouvrir les discussions</button>
+    <p>Le bouton « Outils de l’association » vous ramène ici. Choisissez votre profil et votre groupe dans la messagerie : ils ne sont pas associés automatiquement à l’espace Verger.</p></article>`;
   const link = context.simplexLink || "";
   return `${heading("Discussion SimpleX", "Retrouver le groupe de votre association dans SimpleX.")}
     <article class="card"><h2>Échanger avec le groupe</h2>
