@@ -4,7 +4,7 @@
 
 - `services/verger-sync`: npm ci et npm run check réussis ; tests métier et
   scénario HTTP réel avec SQLite en mémoire, deux organisations et plusieurs comptes.
-- `apps/verger-pwa`: npm ci, npm run check et npm run build réussis ; trois tests
+- `apps/verger-pwa`: npm ci, npm run check et npm run build réussis ; quatre tests
   de passerelle SimpleX (validation, séparation locale, rendu).
 - `sh scripts/test.sh`: sept tests Webxdc historiques réussis.
 - Navigateur Chromium via prévisualisation Vite : démarrage, navigation Discussion,
@@ -26,7 +26,7 @@
 
 ## Limites restantes
 
-- Chat embarqué non implémenté : passerelle d’invitation uniquement.
+- Prototype embarqué codé dans le fork ; compilation Android bloquée par la suspension Actions du fork. Tests web du mode embarqué réussis, aucun essai matériel.
 - Pas de déploiement serveur ni APK produit par ce lot.
 - L’isolation HTTP des consultations ne qualifie pas la synchronisation CRDT
   multi-associations ; celle-ci conserve les limites documentées du jeton partagé.

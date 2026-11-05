@@ -25,7 +25,7 @@ Le chiffrement des messages SimpleX ne chiffre pas automatiquement les documents
 Automerge ou les réponses SQLite. Les rôles SimpleX ne sont pas les rôles Verger.
 Un retrait du groupe ne révoque pas un compte Verger, ni inversement.
 
-## Livré dans cette branche : passerelle d’invitation
+## Parcours navigateur : passerelle d’invitation
 
 Entrée « Discussion SimpleX » dans la navigation PWA/Capacitor. L’utilisateur peut
 conserver, modifier, ouvrir ou copier un lien HTTPS SimpleX. Il reste en stockage
@@ -44,24 +44,30 @@ Le contenu du lien reste une invitation privée, lisible par les scripts de mêm
 origine comme les autres données locales. Aucune clé de chiffrement SimpleX n’est
 stockée dans Verger. Aucun groupe réel n’a été créé ni rejoint par l’automatisation.
 
-## Intégration embarquée : travail nécessaire
+## Prototype Android intégré : code préparé, APK non compilé
 
-1. Partir d’un commit stable identifié du fork, sans fusionner ses trois PR
-   expérimentales. Mettre à jour la base avec l’amont après comparaison.
-2. Faire un prototype Android du moteur natif et de son cycle de vie : bases
-   chiffrées, clés dans le stockage adapté, notifications, arrière-plan et reprise.
-3. Définir un pont Capacitor restreint (liste/envoi/réception), sans commande brute
-   ni socket d’administration exposés au Web. Une API de bot hébergée n’est pas un
-   client privé par membre : l’hébergeur en serait un endpoint de déchiffrement.
-4. Associer explicitement profil/groupe SimpleX et association Verger sans déduire
-   les identités des noms affichés. Définir invitation, départ et révocation.
-5. Tester deux appareils, reprises réseau, destinataires, doublons et sauvegardes.
-   Trois appareils et TURN pour le prototype d’appels collectifs.
-6. Définir séparément le parcours PWA : le moteur natif Android n’est pas un module
-   JavaScript que l’on peut simplement importer dans Vite.
+Branche du fork : `prototype/verger-embedded-20261105`, commit
+`d1cf0813ce0f89cd517ce861bb476ff9a9cafb42`.
 
-La réussite du build web ne valide pas ce portage. Ne pas annoncer un chat intégré
-avant envoi/réception réels entre deux installations.
+Une seule application contient l'interface native SimpleX et les outils Verger
+embarqués dans une WebView locale. Les boutons internes passent de l'un à l'autre
+sans intent vers une application externe. La PWA détecte le pont de navigation
+`VergerNative.openChat`, masque les invitations externes et utilise le mode natif.
+Aucun message ni clé ne transite dans ce pont.
+
+Le moteur et le cycle de vie SimpleX existants sont conservés. La base identifiée
+79d91e7 n'inclut pas les expérimentations Vault/appels collectifs. Le build épingle
+Verger à ed99ffc et contrôle la compatibilité des sources du noyau natif réutilisé.
+
+**Blocage constaté :** GitHub Actions indique que les workflows du fork sont
+suspendus en raison du volume d'utilisation ; réactivation par le propriétaire
+nécessaire. Aucun APK produit ni test Android exécuté dans cette session.
+
+Restent la compilation, les essais sur deux téléphones (messages, arrière-plan,
+reprise), l'association explicite des groupes aux espaces associatifs et la
+continuité des invitations/révocations. Le verrouillage SimpleX ne protège pas
+encore Verger ; import/export WebView à adapter. Ne pas confondre la réussite des
+tests web et la validation matérielle du prototype.
 
 ## Sources examinées
 
