@@ -41,9 +41,17 @@ jobs:
     # when explicitly requested or for a deliberate release tag.
     if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
     needs: test
-    uses: jasmin-abernathy/app-build-factory/.github/workflows/webxdc-build.yml@main
-    with:
-      app_directory: "apps/reunions-decisions"
-      package_name: "reunions-decisions"
-      artifact_name: "reunions-decisions-xdc"
-      retention_days: 7
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - name: Fabriquer et vérifier le paquet historique
+        run: sh scripts/build-xdc.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reunions-decisions-xdc-${{ github.sha }}
+          path: |
+            dist/reunions-decisions.xdc
+            dist/reunions-decisions.xdc.sha256
+          if-no-files-found: error
+          retention-days: 7
