@@ -111,6 +111,12 @@ La cible pilote utilise désormais l’autorité serveur décrite dans `CONSULTA
 - passage à l’urne Mieux Voter et compatibilité amont encore à réaliser ;
 - persistance du résultat dans le document Verger reportée jusqu’à stabilisation du format amont.
 
+## Discussion SimpleX
+
+[Passerelle locale et réutilisation prévue](SIMPLEX-INTEGRATION.md) : échanges,
+groupes, fichiers et appels individuels peuvent réutiliser SimpleX. Les signalements
+structurés, tâches, consultations et décisions restent des données Verger.
+
 ## Règle de développement
 
 Un module passe en développement si :

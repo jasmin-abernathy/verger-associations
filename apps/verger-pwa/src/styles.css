@@ -203,3 +203,7 @@ html[data-native="true"] main {
   padding-bottom: max(clamp(1rem, 3vw, 2rem), env(safe-area-inset-bottom));
   padding-left: max(clamp(1rem, 3vw, 2rem), env(safe-area-inset-left));
 }
+
+/* External chat entry keeps the same touch target and focus treatment as buttons. */
+a.button { display: inline-flex; align-items: center; min-height: 44px; padding: 0.65rem 0.9rem; border: 1px solid var(--green); border-radius: 0.6rem; background: var(--green); color: #fff; font-weight: 750; text-decoration: none; }
+a.button:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }

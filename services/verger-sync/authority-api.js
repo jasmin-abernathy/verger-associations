@@ -24,10 +24,12 @@ export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins
   const mutationOrigins = [...new Set([...allowedOrigins, ...nativeOrigins])];
 
   app.use("/api/v1", (request, response, next) => {
+    response.setHeader("Cache-Control", "no-store");
     const origin = normalizedOrigin(request.headers.origin);
-    if (origin && nativeOrigins.includes(origin)) {
+    if (origin && mutationOrigins.includes(origin)) {
       response.setHeader("Access-Control-Allow-Origin", origin);
-      response.setHeader("Vary", "Origin");
+      response.vary("Origin");
+      if (allowedOrigins.includes(origin)) response.setHeader("Access-Control-Allow-Credentials", "true");
       response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
       response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
       response.setHeader("Access-Control-Max-Age", "600");
@@ -147,7 +149,15 @@ export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins
     } catch (error) { next(error); }
   });
 
+  app.use("/api/v1", (_request, response) => {
+    response.status(404).json({ error: "route_not_found", message: "Service demandé introuvable" });
+  });
+
   app.use("/api/v1", (error, _request, response, _next) => {
+    if (error.type === "entity.parse.failed") {
+      response.status(400).json({ error: "invalid_json", message: "Requête JSON invalide" });
+      return;
+    }
     const status = Number(error?.status) || 500;
     if (status >= 500) console.error(error);
     response.status(status).json({

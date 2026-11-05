@@ -1,3 +1,4 @@
+import { readSimplexLink, saveSimplexLink } from "./simplex.js";
 import {
   addAction,
   addAgendaItem,
@@ -102,6 +103,7 @@ function context() {
     nativePlatform,
     platformName,
     authority: authorityState,
+    simplexLink: readSimplexLink(localStorage, handle.url),
   };
 }
 
@@ -148,6 +150,15 @@ async function handleForm(form) {
 
   if (["account-login","account-accept-invite","account-invite","poll-create","poll-edit","poll-response","poll-cancel"].includes(type)) {
     await handleAuthorityForm(form, type, values);
+    return;
+  }
+
+  if (type === "simplex-settings") {
+    try {
+      saveSimplexLink(localStorage, handle.url, values.link);
+      showToast(values.link.trim() ? "Lien SimpleX enregistré sur cet appareil" : "Lien SimpleX retiré");
+      render();
+    } catch (error) { showToast(error.message, true); }
     return;
   }
 
@@ -600,6 +611,7 @@ document.addEventListener("click", (event) => {
   const button = event.target.closest?.("[data-action]");
   if (!button) return;
   const action = button.dataset.action;
+  if (action === "copy-simplex-link") void copyText(readSimplexLink(localStorage, handle.url), "Lien SimpleX copié");
   if (action === "close-volunteer") closeVolunteer(button.dataset.id);
   if (action === "toggle-help") toggleHelp(button);
   if (action === "archive-item") archiveItem(button);

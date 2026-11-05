@@ -3,7 +3,7 @@ import { empty, escapeHtml as e, formatDate, heading, stat } from "./helpers.js"
 import { meetingCard } from "./meetings.js";
 
 export function renderView(name, state, context) {
-  const renderers = { dashboard, members, welcome, meetings, decisions, actions, events, volunteers, help, consultations, more, settings };
+  const renderers = { dashboard, members, welcome, meetings, decisions, actions, events, volunteers, help, consultations, chat, more, settings };
   return renderers[name]?.(state, context) || "";
 }
 
@@ -325,4 +325,18 @@ function consultationCard(item) {
 
 function actionRow(action) {
   return `<li class="check-row"><input type="checkbox" ${action.done ? "checked" : ""} data-toggle-action="${e(action.id)}" aria-label="Marquer ${e(action.text)} comme terminée"><div><strong class="${action.done ? "done" : ""}">${e(action.text)}</strong><span>${action.owner ? `Responsable : ${e(action.owner)}` : "Sans responsable"}${action.due ? ` · ${formatDate(action.due)}` : ""}</span></div></li>`;
+}
+
+function chat(_state, context) {
+  const link = context.simplexLink || "";
+  return `${heading("Discussion SimpleX", "Retrouver le groupe de votre association dans SimpleX.")}
+    <article class="card"><h2>Échanger avec le groupe</h2>
+      <p>Cette première passerelle ouvre SimpleX, où vous choisissez votre profil et confirmez la connexion. Les messages restent dans SimpleX ; ils ne sont pas intégrés à Verger à ce stade.</p>
+      ${link ? `<div class="button-row"><a class="button" href="${e(link)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Ouvrir l’invitation dans SimpleX</a><button type="button" class="secondary" data-action="copy-simplex-link">Copier le lien</button></div>` : '<p class="empty">Aucun groupe associé sur cet appareil. Demandez le lien d’invitation à une personne du groupe.</p>'}
+      <p>SimpleX doit être installé pour discuter. Si plusieurs versions sont installées, choisissez celle que vous utilisez pour cette association. Aucun message ni relevé n’est envoyé automatiquement.</p>
+    </article>
+    <article class="card"><h2>${link ? "Modifier le lien" : "Associer un groupe"}</h2>
+      <form data-form="simplex-settings" class="form"><label>Lien d’invitation SimpleX<input name="link" type="url" inputmode="url" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="16384" placeholder="https://simplex.chat/…" value="${e(link)}" aria-describedby="simplex-storage"></label>
+      <p id="simplex-storage" class="muted">Conservé uniquement sur cet appareil, pour cet espace Verger. Ce lien privé n’est ni synchronisé ni inclus dans les exports. Videz le champ puis enregistrez pour le retirer ; cela ne quitte pas le groupe SimpleX.</p><button>Enregistrer le lien</button></form>
+    </article>`;
 }

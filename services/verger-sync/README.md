@@ -143,3 +143,12 @@ Authorization: Bearer <session>
 La PWA web continue d’utiliser son cookie `HttpOnly`.
 
 Voir `../../docs/SERVER-ANDROID.md`.
+
+## Validation HTTP
+
+`npm ci && npm run check` exécute aussi un scénario HTTP sur port local éphémère
+avec SQLite en mémoire : sessions web/natives, invitation à usage unique, isolation
+des associations, réponse modifiable, clôture créateur, agrégats et déconnexion.
+Les réponses privées portent `Cache-Control: no-store`. Les origines Web configurées
+reçoivent les en-têtes CORS avec credentials ; les cookies restent SameSite=Lax :
+préférer une origine commune, un site tiers pouvant bloquer les cookies.

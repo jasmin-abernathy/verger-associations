@@ -56,8 +56,8 @@ Le pourcentage a été recalibré lors du pivot v0.3 : le prototype Webxdc a val
   - [x] ajouter une session Bearer dédiée à l’application native ;
   - [x] conserver la session native en mémoire seulement pour le premier debug ;
   - [x] autoriser explicitement l’origine Capacitor côté serveur ;
-  - [ ] mettre à jour le lockfile npm après ajout de Capacitor ;
-  - [ ] générer et versionner le dossier Android avec `npm run android:init` ;
+  - [x] mettre à jour le lockfile npm après ajout de Capacitor ;
+  - [x] générer et versionner le dossier Android avec `npm run android:init` ;
   - [ ] produire le premier APK debug ;
   - [ ] connecter l’APK à une instance HTTPS/WSS réelle ;
   - [ ] tester stockage local, hors-ligne et reconnexion sur téléphone ;
@@ -84,7 +84,7 @@ Le pourcentage a été recalibré lors du pivot v0.3 : le prototype Webxdc a val
 
 ## Prochaine étape concrète
 
-Depuis `apps/verger-pwa`, exécuter `npm install` pour intégrer Capacitor au lockfile, puis `npm run android:init` afin de générer le projet Gradle Android. Produire ensuite un APK debug avec `npm run android:apk:debug`.
+Le lockfile et le projet Android sont déjà versionnés. Produire un APK debug avec `npm ci` puis `npm run android:apk:debug` sur un environnement avec SDK Android.
 
 Sur l’APK, exécuter le scénario suivant :
 
@@ -96,3 +96,14 @@ Sur l’APK, exécuter le scénario suivant :
 6. créer une action ;
 7. couper le réseau sur un client, modifier des données des deux côtés, reconnecter et vérifier la convergence ;
 8. exporter puis réimporter une sauvegarde JSON.
+
+## Réutilisation SimpleX (5 novembre 2026)
+
+Voir [le découpage et les limites](SIMPLEX-INTEGRATION.md). La passerelle locale
+d’invitation est implémentée ; le chat embarqué reste à prototyper. Réutiliser les
+messages, groupes et pièces jointes existants plutôt que développer une messagerie
+Verger. Garder les consultations, tâches et décisions dans le socle métier.
+
+- [x] Test HTTP complet des comptes et consultations (cookies/Bearer, invitations,
+  réponse modifiable, clôture, séparation des associations, déconnexion).
+- [ ] Validation navigateur puis deux appareils, dont ouverture du fork SimpleX.
