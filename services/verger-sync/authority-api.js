@@ -1,4 +1,5 @@
 import express from "express";
+import { startDomainVerification, completeDomainVerification } from "./organization-registration.js";
 import {
   acceptInvitation,
   accountFromSessionToken,
@@ -20,7 +21,7 @@ import { parseCookies } from "./authority-security.js";
 
 const COOKIE = "verger_session";
 
-export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins = [], nativeOrigins = [] }) {
+export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins = [], nativeOrigins = [], dnsResolver }) {
   const mutationOrigins = [...new Set([...allowedOrigins, ...nativeOrigins])];
 
   app.use("/api/v1", (request, response, next) => {
@@ -46,6 +47,32 @@ export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins
     next();
   });
   app.use("/api/v1", express.json({ limit: "64kb" }));
+
+  app.post("/api/v1/organizations/verification/start", (request, response, next) => {
+    try {
+      const challenge = startDomainVerification(db, request.body?.domain);
+      response.status(201).json(challenge);
+    } catch (error) { next(error); }
+  });
+
+  // Only the server's DNS resolver can confirm domain control. The client
+  // never sets a "verified" flag by itself.
+  async function finishDomainRegistration(request, response, next, native) {
+    try {
+      const { account, organization, session } = await completeDomainVerification(db, request.body || {}, { dnsResolver });
+      if (!native) setSessionCookie(response, session.token, session.expiresAt, cookieSecure);
+      response.status(201).json({
+        account, organization,
+        ...(native ? { sessionToken: session.token, expiresAt: session.expiresAt } : {}),
+      });
+    } catch (error) { next(error); }
+  }
+
+  app.post("/api/v1/organizations/verification/complete", (request, response, next) =>
+    void finishDomainRegistration(request, response, next, false));
+
+  app.post("/api/v1/native/organizations/verification/complete", requireNativeOrigin(nativeOrigins), (request, response, next) =>
+    void finishDomainRegistration(request, response, next, true));
 
   app.post("/api/v1/login", (request, response, next) => {
     try {
