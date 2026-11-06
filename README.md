@@ -92,6 +92,8 @@ Une intégration future peut ajouter des liens, notifications ou exports entre l
 
 ## Documentation
 
+- [Création et vérification d'une association](docs/CONFIGURATION-ASSOCIATION.md)
+
 - [Architecture v0.3](docs/ARCHITECTURE-V03.md)
 - [Application Android](docs/ANDROID.md)
 - [Déploiement serveur Android](docs/SERVER-ANDROID.md)
