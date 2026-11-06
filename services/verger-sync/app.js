@@ -15,6 +15,8 @@ if (!path.isAbsolute(databaseFile) || !registrationDomains.length || !nativeOrig
   throw new Error("Pilote : définir VERGER_AUTH_DB (chemin absolu), VERGER_REGISTRATION_DOMAINS et VERGER_NATIVE_ORIGINS");
 }
 
+// Keep SQLite, WAL and SHM files private even when Passenger creates them later.
+process.umask(0o077);
 const db = openAuthorityDatabase(databaseFile);
 const app = createAuthorityPilotApp({ db, registrationDomains, allowedOrigins, nativeOrigins });
 const port = Number(process.env.PORT || 3000);
