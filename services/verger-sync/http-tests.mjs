@@ -82,3 +82,50 @@ test('HTTP: connexion, invitations, consultation et séparation des associations
     db.close();
   }
 });
+
+
+test("HTTP: inscription d'une association par preuve DNS et rôle administrateur", async () => {
+  const db = openAuthorityDatabase(":memory:");
+  let txt = [];
+  const app = express();
+  mountAuthorityApi(app, {
+    db, allowedOrigins: ["https://verger.example.test"], nativeOrigins: ["https://localhost"],
+    dnsResolver: async name => {
+      assert.equal(name, "_verger.association.fr");
+      return txt;
+    },
+  });
+  const server = app.listen(0, "127.0.0.1");
+  await new Promise(resolve => server.once("listening", resolve));
+  const base = "http://127.0.0.1:" + server.address().port + "/api/v1";
+  async function post(route, body, origin = "https://verger.example.test") {
+    const res = await fetch(base + route, {
+      method: "POST", headers: { "Content-Type": "application/json", Origin: origin }, body: JSON.stringify(body),
+    });
+    return { status: res.status, data: await res.json(), cookie: res.headers.get("set-cookie") };
+  }
+  try {
+    const created = await post("/organizations/verification/start", { domain: "association.fr" });
+    assert.equal(created.status, 201);
+    assert.match(created.data.dnsValue, /^verger-domain-verification=/);
+    const payload = {
+      challengeId: created.data.challengeId, dnsValue: created.data.dnsValue,
+      name: "Association test", email: "admin@association.fr", password: "password-very-long-123",
+      themeColor: "#507060", modules: ["members", "chat"],
+    };
+    assert.equal((await post("/organizations/verification/complete", payload)).status, 409);
+    txt = [[created.data.dnsValue]];
+    const result = await post("/organizations/verification/complete", payload);
+    assert.equal(result.status, 201);
+    assert.equal(result.data.account.role, "administrator");
+    assert.equal(result.data.organization.domainVerified, true);
+    assert.equal(result.data.sessionToken, undefined);
+    assert.match(result.cookie, /HttpOnly/);
+    assert.equal((await post("/organizations/verification/start", { domain: "association.fr" })).status, 409);
+    assert.equal((await post("/organizations/verification/complete", payload)).status, 410);
+  } finally {
+    server.closeAllConnections();
+    await new Promise(resolve => server.close(resolve));
+    db.close();
+  }
+});

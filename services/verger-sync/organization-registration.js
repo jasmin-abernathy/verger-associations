@@ -35,6 +35,9 @@ function ensureUnclaimed(db, domain) {
 export function startDomainVerification(db, rawDomain) {
   const domain = normalizeDomain(rawDomain);
   ensureUnclaimed(db, domain);
+  const pending = db.prepare("SELECT COUNT(*) AS total FROM domain_verifications WHERE domain = ? AND expires_at > ? AND used_at IS NULL")
+    .get(domain, now()).total;
+  if (pending >= 5) fail(429, "too_many_challenges", "Trop de codes créés pour ce domaine : réessayez plus tard");
   const id = randomUUID();
   const token = randomSecret(32);
   const expiresAt = new Date(Date.now() + TTL_MS).toISOString();
