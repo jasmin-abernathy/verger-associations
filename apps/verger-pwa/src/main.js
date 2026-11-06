@@ -279,15 +279,7 @@ function exportCalendarEvent(id) {
     const event = currentDoc().events?.[id];
     if (!event) throw new Error("Événement introuvable");
     const ics = exportEventIcs(event);
-    const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = slug(event.title) + ".ics";
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    showToast("Calendrier exporté");
+    saveDownloadedText(slug(event.title) + ".ics", "text/calendar", ics);
   } catch (error) { showToast(error?.message || "Export impossible", true); }
 }
 
@@ -560,21 +552,28 @@ function renumberPollOptions(list) {
   });
 }
 
+function saveDownloadedText(filename, type, text) {
+  if (typeof window.VergerNative?.saveText === "function") {
+    window.VergerNative.saveText(filename, type, text);
+    showToast("Choisissez où enregistrer ce fichier.");
+    return;
+  }
+  const url = URL.createObjectURL(new Blob([text], { type: type + ";charset=utf-8" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast("Fichier exporté");
+}
 function downloadMeetingMarkdown(meetingId) {
   try {
     const state = currentDoc();
     const meeting = state.meetings?.[meetingId];
     const text = exportMeetingMarkdown(state, meetingId);
-    const file = new Blob([text], { type: "text/markdown;charset=utf-8" });
-    const url = URL.createObjectURL(file);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${slug(meeting?.title || "reunion")}.md`;
-    document.body.append(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    showToast("Relevé Markdown exporté");
+    saveDownloadedText(`${slug(meeting?.title || "reunion")}.md`, "text/markdown", text);
   } catch (error) {
     showToast(error?.message || "Export impossible", true);
   }
@@ -582,18 +581,8 @@ function downloadMeetingMarkdown(meetingId) {
 
 function downloadExport() {
   const text = exportPortableJson(currentDoc());
-  const file = new Blob([text], { type: "application/json;charset=utf-8" });
-  const url = URL.createObjectURL(file);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${slug(currentDoc()?.organization?.name || "verger-associations")}.verger.json`;
-  document.body.append(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-  showToast("Sauvegarde JSON exportée");
+  saveDownloadedText(`${slug(currentDoc()?.organization?.name || "verger-associations")}.verger.json`, "application/json", text);
 }
-
 async function importExport(file) {
   try {
     const data = importAnyJson(await file.text());
