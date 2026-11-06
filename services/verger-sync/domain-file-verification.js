@@ -2,7 +2,7 @@ import https from "node:https";
 import { lookup } from "node:dns/promises";
 import { BlockList, isIP } from "node:net";
 
-export const VERIFICATION_FILE_PATH = "/.well-known/verger-verification.txt";
+export const VERIFICATION_FILE_PATH = "/verger-verification.txt";
 const MAX_BYTES = 2048;
 const REQUEST_TIMEOUT_MS = 6000;
 
