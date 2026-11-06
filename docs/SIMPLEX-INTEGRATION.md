@@ -1,5 +1,10 @@
 # SimpleX et Verger Associations — état au 5 novembre 2026
 
+## Mise à jour du 6 novembre : APK produit
+
+La suspension Actions a été levée. Compilation réussie : https://github.com/jasmin-abernathy/simplex-chat/actions/runs/42099912557 (source SimpleX `94f6dc39615209e323d7d76c4742f22ce5c7a3c0`, Verger `ed99ffc51dadbd3af9a193c5dc71d180bf658bc1`). Tests web, desktop et unitaires Android réussis ; signature et présence des assets Verger et bibliothèques natives vérifiées. APK arm64 Android 8+, identifiant distinct `chat.simplex.app.vergertest`. Empreinte du fichier téléchargé vérifiée. Aucun essai sur téléphone ni échange entre deux comptes réalisé : ces validations restent nécessaires. Les limites concernant les groupes, le verrouillage Verger et les fichiers WebView restent inchangées. Les mentions de blocage ci-dessous décrivent l'état antérieur à cette compilation.
+
+
 ## Choix produit
 
 Réutiliser SimpleX pour la communication, garder les outils métier dans Verger.
