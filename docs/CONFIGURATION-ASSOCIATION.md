@@ -22,7 +22,7 @@ L'application est **une seule APK Verger** avec SimpleX embarqué, pas un fork �
 
 ## Serveur requis
 
-La preuve de domaine nécessite le serveur `services/verger-sync` avec l'API `/api/v1`, une base SQLite accessible et un résolveur DNS opérationnel. Les requêtes d'authentification doivent passer en HTTPS ; configurer les origines autorisées dans `VERGER_ALLOWED_ORIGINS` et `VERGER_NATIVE_ORIGINS`. L'APK de prototype peut demander l'URL du serveur si elle n'a pas été définie au build.
+La preuve de domaine nécessite le serveur `services/verger-sync` avec l'API `/api/v1`, une base SQLite accessible et un résolveur DNS opérationnel. Les requêtes d'authentification doivent passer en HTTPS ; configurer les origines autorisées dans `VERGER_ALLOWED_ORIGINS` et `VERGER_NATIVE_ORIGINS`. Pour **l'APK SimpleX embarquée**, l'origine WebView à autoriser est précisément `https://appassets.androidplatform.net` (par exemple `VERGER_NATIVE_ORIGINS=https://appassets.androidplatform.net`), et non seulement la valeur par défaut `https://localhost`. L'APK de prototype peut demander l'URL du serveur si elle n'a pas été définie au build.
 
 - `POST /api/v1/organizations/verification/start` : crée un défi, affiche le nom et la valeur du TXT, expire au bout de 60 minutes.
 - `POST /api/v1/organizations/verification/complete` : valide le DNS et crée le compte responsable avec cookie sécurisé.
