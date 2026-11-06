@@ -195,7 +195,8 @@ function isAdministrator() {
 }
 
 function viewAllowed(view, state = currentDoc()) {
-  if (["members", "welcome", "settings", "admin"].includes(view)) return isAdministrator();
+  if (view === "admin") return true;
+  if (["members", "welcome", "settings"].includes(view)) return isAdministrator();
   if (["dashboard", "more"].includes(view)) return true;
   return (state?.organization?.modules || DEFAULT_MODULES).includes(view);
 }
@@ -215,7 +216,7 @@ function render() {
     if (active) panel.innerHTML = onboarding ? renderSetupWizard(setup, getApiBaseUrl()) : renderView(currentView, state, context());
   }
   for (const item of navItems) {
-    item.hidden = !viewAllowed(item.dataset.view, state);
+    item.hidden = ["members", "welcome", "settings"].includes(item.dataset.view) || !viewAllowed(item.dataset.view, state);
     item.classList.toggle("is-active", item.dataset.view === currentView);
   }
   updateConnectionState();

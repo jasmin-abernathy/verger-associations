@@ -6,7 +6,7 @@ import { MODULES, DEFAULT_MODULES } from "./setup.js";
 
 export function renderView(name, state, context) {
   const renderers = { dashboard, members, welcome, meetings, decisions, actions, events, volunteers, help, ideas: renderIdeas, resources: renderResources, consultations, chat, more, admin, settings };
-  if (["members", "welcome", "admin", "settings"].includes(name) && (context.authority?.account?.role !== "administrator" || context.authority.account.organizationId !== state.organization?.id)) {
+  if (["members", "welcome", "settings"].includes(name) && (context.authority?.account?.role !== "administrator" || context.authority.account.organizationId !== state.organization?.id)) {
     return heading("Accès réservé", "Cette page est réservée aux responsables de l'association.");
   }
   return renderers[name]?.(state, context) || "";
@@ -287,10 +287,22 @@ function more(state, context) {
   const isAdmin = context.authority?.account?.role === "administrator" && context.authority.account.organizationId === state.organization?.id;
   return `${heading("Tous les modules", "Naviguez sans faire défiler une longue barre horizontale.")}
     <div class="module-grid">${available.map(([id,title]) => `<article class="card"><h2>${e(title)}</h2><button type="button" data-action="open-view" data-view="${e(id)}">Ouvrir</button></article>`).join("")}
-    ${isAdmin ? '<article class="card"><h2>Administration</h2><button type="button" data-action="open-view" data-view="admin">Gérer l’association</button></article>' : ""}</div>`;
+    <article class="card"><h2>${isAdmin ? "Administration" : "Espace responsable"}</h2><button type="button" data-action="open-view" data-view="admin">${isAdmin ? "Gérer l’association" : "Se connecter"}</button></article></div>`;
 }
 
 function admin(state, context) {
+  const account = context.authority?.account;
+  const isAdmin = account?.role === "administrator" && account.organizationId === state.organization?.id;
+  if (!isAdmin) {
+    return `${heading("Espace responsable", "Connectez-vous pour accéder aux réglages et à la gestion des membres.")}
+      <article class="card"><h2>Connexion</h2>
+        ${context.authority?.error ? `<p class="warning">${e(context.authority.error)}</p>` : ""}
+        ${account ? `<p>Compte connecté : ${e(account.email)} (${e(account.role)}). Vous ne disposez pas des droits d'administration de cet espace.</p><button type="button" data-action="account-logout">Changer de compte</button>` : `<form data-form="account-login" class="form">
+          <label>E-mail<input type="email" name="email" required autocomplete="username"></label>
+          <label>Mot de passe<input type="password" name="password" required autocomplete="current-password"></label>
+          <button>Se connecter</button></form>`}
+      </article>`;
+  }
   return `${heading("Administration", "Les paramètres et la gestion des adhérents sont réservés aux responsables.")}
     <div class="module-grid">
       <article class="card"><h2>Membres</h2><p>Fiches et rôles des adhérents.</p><button type="button" data-action="open-view" data-view="members">Gérer les membres</button></article>
