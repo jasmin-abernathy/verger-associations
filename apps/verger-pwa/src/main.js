@@ -1,4 +1,5 @@
 import { readSimplexLink, saveSimplexLink } from "./simplex.js";
+import { DEFAULT_MODULES, MODULES, renderSetupWizard } from "./setup.js";
 import {
   addAction,
   addAgendaItem,
@@ -42,6 +43,8 @@ import {
   saveServerSettings,
 } from "./platform.js";
 import {
+  beginDomainVerification,
+  completeDomainRegistration,
   acceptInvitation as acceptAccountInvitation,
   cancelPoll as cancelAuthorityPoll,
   closePoll as closeAuthorityPoll,
@@ -68,6 +71,19 @@ const toast = document.getElementById("toast");
 const query = new URLSearchParams(location.search);
 const publicPollId = query.get("publicPoll") || "";
 let currentView = publicPollId ? "consultations" : "dashboard";
+const initialAssociation = currentDoc()?.organization || {};
+const setup = {
+  active: !publicPollId && initialAssociation.setupCompleted !== true,
+  step: 0,
+  name: initialAssociation.name === "Mon association" ? "" : (initialAssociation.name || ""),
+  description: initialAssociation.description || "",
+  domain: initialAssociation.domain || "",
+  email: "",
+  password: "",
+  themeColor: initialAssociation.themeColor || "#315f3a",
+  modules: initialAssociation.modules || [...DEFAULT_MODULES],
+  challenge: null,
+};
 let installPrompt = null;
 let toastTimer = null;
 let authorityState = {
@@ -86,6 +102,68 @@ if (publicPollId) document.documentElement.dataset.publicPoll = "true";
 document.documentElement.dataset.native = String(nativePlatform);
 document.documentElement.dataset.platform = platformName;
 if (nativePlatform) installButton.hidden = true;
+
+async function handleSetupForm(form, type, values) {
+  try {
+    if (type === "setup-identity") {
+      setup.name = String(values.name || "").trim();
+      if (!setup.name) throw new Error("Indiquez le nom de votre association");
+      setup.description = String(values.description || "").trim();
+      setup.step = 1;
+    }
+    if (type === "setup-features") {
+      setup.themeColor = String(values.themeColor || "#315f3a");
+      setup.modules = new FormData(form).getAll("module").filter(m => MODULES.some(([id]) => id === m));
+      setup.step = 2;
+    }
+    if (type === "setup-owner") {
+      setup.domain = String(values.domain || "").trim();
+      setup.email = String(values.email || "").trim();
+      setup.password = String(values.password || "");
+      const serverUrl = String(values.apiUrl || "").trim();
+      if (serverUrl) {
+        const u = new URL(serverUrl);
+        if (u.protocol !== "https:" && !["localhost", "127.0.0.1"].includes(u.hostname)) {
+          throw new Error("La vérification du domaine nécessite un serveur HTTPS");
+        }
+        saveServerSettings({ apiUrl: serverUrl });
+      }
+      if (!getApiBaseUrl()) throw new Error("Serveur Verger non configuré : vérification DNS impossible");
+      setup.challenge = await beginDomainVerification(setup.domain);
+      setup.step = 3;
+      showToast("Code de vérification créé");
+    }
+    if (type === "setup-verify") {
+      if (!setup.challenge) throw new Error("Demandez à nouveau un code de vérification");
+      const data = await completeDomainRegistration({
+        challengeId: setup.challenge.challengeId, dnsValue: setup.challenge.dnsValue,
+        name: setup.name, description: setup.description, domain: setup.challenge.domain,
+        email: setup.email, password: setup.password, themeColor: setup.themeColor, modules: setup.modules,
+      });
+      changeDoc(doc => {
+        doc.organization.id = data.organization.id;
+        doc.organization.name = data.organization.name;
+        doc.organization.description = data.organization.description;
+        doc.organization.domain = data.organization.domain;
+        doc.organization.domainVerified = true;
+        doc.organization.setupCompleted = true;
+        doc.organization.themeColor = data.organization.themeColor;
+        doc.organization.modules = [...data.organization.modules];
+      });
+      setup.password = "";
+      setup.challenge = null;
+      setup.active = false;
+      authorityState.account = data.account;
+      currentView = "dashboard";
+      showToast("Association créée et domaine vérifié ✓");
+      void loadAuthority();
+    }
+    render();
+  } catch (error) {
+    showToast(error?.message || "Configuration impossible", true);
+    render();
+  }
+}
 
 function showToast(message, isError = false) {
   clearTimeout(toastTimer);
@@ -107,19 +185,39 @@ function context() {
     embeddedSimplex,
     authority: authorityState,
     simplexLink: readSimplexLink(localStorage, handle.url),
+    setupNeeded: currentDoc()?.organization?.setupCompleted !== true,
   };
+}
+
+function isAdministrator() {
+  return authorityState.account?.role === "administrator" &&
+    authorityState.account.organizationId === currentDoc()?.organization?.id;
+}
+
+function viewAllowed(view, state = currentDoc()) {
+  if (["members", "welcome", "settings", "admin"].includes(view)) return isAdministrator();
+  if (["dashboard", "more"].includes(view)) return true;
+  return (state?.organization?.modules || DEFAULT_MODULES).includes(view);
 }
 
 function render() {
   const state = currentDoc();
   if (!state) return;
+  const onboarding = setup.active && !authorityState.publicMode;
+  document.documentElement.dataset.setup = String(onboarding);
+  const color = state.organization?.themeColor;
+  if (/^#[\da-fA-F]{6}$/.test(color || "")) document.documentElement.style.setProperty("--green", color);
   headerName.textContent = authorityState.publicMode ? "Résultats publics" : (state.organization?.name || "Mon association");
+  if (!onboarding && !viewAllowed(currentView, state)) currentView = "dashboard";
   for (const panel of panels) {
-    const active = panel.dataset.panel === currentView;
+    const active = panel.dataset.panel === (onboarding ? "dashboard" : currentView);
     panel.hidden = !active;
-    if (active) panel.innerHTML = renderView(currentView, state, context());
+    if (active) panel.innerHTML = onboarding ? renderSetupWizard(setup, getApiBaseUrl()) : renderView(currentView, state, context());
   }
-  for (const item of navItems) item.classList.toggle("is-active", item.dataset.view === currentView);
+  for (const item of navItems) {
+    item.hidden = !viewAllowed(item.dataset.view, state);
+    item.classList.toggle("is-active", item.dataset.view === currentView);
+  }
   updateConnectionState();
 }
 
@@ -148,6 +246,14 @@ function mutate(action, successMessage) {
 async function handleForm(form) {
   const type = form.dataset.form;
   const values = formValues(form);
+  if (type.startsWith("setup-")) {
+    await handleSetupForm(form, type, values);
+    return;
+  }
+  if (["member", "member-edit", "organization", "sync", "modules", "account-invite"].includes(type) && !isAdministrator()) {
+    showToast("Fonction réservée aux administrateurs", true);
+    return;
+  }
   const meetingId = form.dataset.meetingId || values.meetingId || "";
   const proposalId = form.dataset.proposalId || values.proposalId || "";
 
@@ -226,6 +332,12 @@ async function handleForm(form) {
         doc.organization.description = String(values.description || "").trim().slice(0, 1000);
       }, "Association mise à jour");
       break;
+    case "modules":
+      mutate((doc) => {
+        doc.organization.modules = new FormData(form).getAll("module").filter(m => MODULES.some(([id]) => id === m));
+        doc.organization.themeColor = /^#[\da-fA-F]{6}$/.test(values.themeColor || "") ? values.themeColor : "#315f3a";
+      }, "Personnalisation enregistrée");
+      break;
     case "sync":
       saveServerSettings({ apiUrl: values.apiUrl, publicWebUrl: values.publicWebUrl });
       saveSyncSettings(values.url, values.token);
@@ -284,6 +396,7 @@ function exportCalendarEvent(id) {
 }
 
 function toggleWelcome(input) {
+  if (!isAdministrator()) return;
   mutate((doc) => setWelcomeStep(doc, input.dataset.memberId, input.dataset.welcomeStep, input.checked), "Accueil mis à jour");
 }
 
@@ -292,6 +405,7 @@ function toggleHelp(button) {
 }
 
 function archiveItem(button) {
+  if (button.dataset.collection === "members" && !isAdministrator()) return;
   mutate(
     (doc) => setArchived(doc, button.dataset.collection, button.dataset.id, button.dataset.archived === "true"),
     button.dataset.archived === "true" ? "Élément archivé" : "Élément restauré",
@@ -612,6 +726,7 @@ function setAccessible(enabled) {
 
 for (const item of navItems) {
   item.addEventListener("click", () => {
+    if (setup.active || !viewAllowed(item.dataset.view)) return;
     currentView = item.dataset.view;
     render();
     document.getElementById("content")?.focus({ preventScroll: true });
@@ -643,6 +758,11 @@ document.addEventListener("click", (event) => {
   const button = event.target.closest?.("[data-action]");
   if (!button) return;
   const action = button.dataset.action;
+  if (action === "setup-explore") { setup.active = false; currentView = "dashboard"; render(); return; }
+  if (action === "setup-resume") { setup.active = true; setup.step = 0; render(); return; }
+  if (action === "setup-back") { setup.step = Math.max(0, setup.step - 1); render(); return; }
+  if (action === "setup-copy-dns" && setup.challenge) { void copyText(setup.challenge.dnsValue, "Valeur TXT copiée"); return; }
+  if (action === "open-view" && viewAllowed(button.dataset.view)) { currentView = button.dataset.view; render(); return; }
   if (action === "open-embedded-chat" && embeddedSimplex) { window.VergerNative.openChat(); return; }
   if (action === "copy-simplex-link") void copyText(readSimplexLink(localStorage, handle.url), "Lien SimpleX copié");
   if (action === "toggle-volunteer") toggleVolunteer(button);
@@ -664,9 +784,9 @@ document.addEventListener("click", (event) => {
     else void copyText(link, "Lien public copié");
   }
   if (action === "export-meeting") downloadMeetingMarkdown(button.dataset.id);
-  if (action === "copy-link") copyDocumentLink();
-  if (action === "export") downloadExport();
-  if (action === "import") document.getElementById("import-file")?.click();
+  if (action === "copy-link" && isAdministrator()) copyDocumentLink();
+  if (action === "export" && isAdministrator()) downloadExport();
+  if (action === "import" && isAdministrator()) document.getElementById("import-file")?.click();
 });
 
 document.addEventListener("change", (event) => {
