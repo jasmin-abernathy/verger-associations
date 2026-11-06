@@ -1,4 +1,5 @@
 import path from "node:path";
+import express from "express";
 import { openAuthorityDatabase } from "./authority-db.js";
 import { createAuthorityPilotApp } from "./authority-pilot.js";
 
@@ -17,7 +18,12 @@ if (!path.isAbsolute(databaseFile) || !registrationDomains.length || !nativeOrig
 const db = openAuthorityDatabase(databaseFile);
 const app = createAuthorityPilotApp({ db, registrationDomains, allowedOrigins, nativeOrigins });
 const port = Number(process.env.PORT || 3000);
-const server = app.listen(port, "0.0.0.0", () => {
+// CloudLinux Passenger retains /verger-api in request.url when mounting an app at a sub-URI.
+const publicPath = String(process.env.VERGER_BASE_PATH || "/verger-api").trim();
+if (!/^\/[a-z0-9/-]+$/.test(publicPath)) throw new Error("VERGER_BASE_PATH invalide");
+const publicApp = express();
+publicApp.use(publicPath, app);
+const server = publicApp.listen(port, "0.0.0.0", () => {
   console.log("Verger pilot API ready");
 });
 
