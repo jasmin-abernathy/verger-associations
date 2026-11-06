@@ -21,7 +21,7 @@ import { parseCookies } from "./authority-security.js";
 
 const COOKIE = "verger_session";
 
-export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins = [], nativeOrigins = [], dnsResolver }) {
+export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins = [], nativeOrigins = [], dnsResolver, fileReader }) {
   const mutationOrigins = [...new Set([...allowedOrigins, ...nativeOrigins])];
   // Limitation par IP plutôt que par domaine : un tiers ne doit pas pouvoir
   // saturer les défis d'une association et bloquer le propriétaire du DNS.
@@ -81,7 +81,7 @@ export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins
   // never sets a "verified" flag by itself.
   async function finishDomainRegistration(request, response, next, native) {
     try {
-      const { account, organization, session } = await completeDomainVerification(db, request.body || {}, { dnsResolver });
+      const { account, organization, session } = await completeDomainVerification(db, request.body || {}, { dnsResolver, fileReader });
       if (!native) setSessionCookie(response, session.token, session.expiresAt, cookieSecure);
       response.status(201).json({
         account, organization,

@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { readVerificationFile, VERIFICATION_FILE_PATH } from "./domain-file-verification.js";
 import { resolveTxt } from "node:dns/promises";
 import { isIP } from "node:net";
 import { domainToASCII } from "node:url";
@@ -46,10 +47,14 @@ export function startDomainVerification(db, rawDomain) {
     challengeId: id, domain, expiresAt,
     dnsType: "TXT", dnsName: "_verger." + domain,
     dnsValue: "verger-domain-verification=" + token,
+    fileName: "verger-verification.txt",
+    filePath: VERIFICATION_FILE_PATH,
+    fileUrl: "https://" + domain + VERIFICATION_FILE_PATH,
+    fileContents: "verger-domain-verification=" + token + "\n",
   };
 }
 
-export async function completeDomainVerification(db, payload, { dnsResolver = resolveTxt } = {}) {
+export async function completeDomainVerification(db, payload, { dnsResolver = resolveTxt, fileReader = readVerificationFile } = {}) {
   const challengeId = String(payload.challengeId || "");
   const challenge = db.prepare("SELECT * FROM domain_verifications WHERE id = ?").get(challengeId);
   if (!challenge || challenge.used_at || challenge.expires_at <= now()) {
@@ -70,17 +75,35 @@ export async function completeDomainVerification(db, payload, { dnsResolver = re
   if (!String(payload.email || "").includes("@")) fail(400, "invalid_email", "Adresse e-mail invalide");
   if (String(payload.password || "").length < 12) fail(400, "invalid_password", "Mot de passe : au moins 12 caractères");
 
-  let entries;
-  try { entries = await dnsResolver("_verger." + domain); }
-  catch (error) {
-    if (["ENOTFOUND", "ENODATA", "NXDOMAIN"].includes(error?.code)) entries = [];
-    else fail(503, "dns_unavailable", "Vérification DNS temporairement indisponible, réessayez");
+  const method = payload.method === undefined ? "dns" : String(payload.method || "");
+  if (!["dns", "file"].includes(method)) {
+    fail(400, "invalid_verification_method", "Choisissez DNS TXT ou fichier HTTPS");
   }
   const expected = "verger-domain-verification=" + String(payload.dnsValue || "").replace(/^verger-domain-verification=/, "");
   const token = expected.slice("verger-domain-verification=".length);
-  if (!token || hashSecret(token) !== challenge.token_hash ||
-      !Array.isArray(entries) || !entries.some(parts => Array.isArray(parts) && parts.join("") === expected)) {
-    fail(409, "dns_not_verified", "Enregistrement TXT introuvable ou incorrect. Sa propagation peut prendre un peu de temps.");
+  if (!token || token.length > 128 || hashSecret(token) !== challenge.token_hash) {
+    fail(409, "invalid_verification_token", "Ce code ne correspond pas à la demande en cours");
+  }
+
+  if (method === "dns") {
+    let entries;
+    try { entries = await dnsResolver("_verger." + domain); }
+    catch (error) {
+      if (["ENOTFOUND", "ENODATA", "NXDOMAIN"].includes(error?.code)) entries = [];
+      else fail(503, "dns_unavailable", "Vérification DNS temporairement indisponible, réessayez");
+    }
+    if (!Array.isArray(entries) || !entries.some(parts => Array.isArray(parts) && parts.join("") === expected)) {
+      fail(409, "dns_not_verified", "Enregistrement TXT introuvable ou incorrect. Sa propagation peut prendre un peu de temps.");
+    }
+  } else {
+    let contents;
+    try { contents = await fileReader(domain); }
+    catch {
+      fail(409, "file_not_available", "Fichier inaccessible : vérifiez le chemin exact, le certificat HTTPS et les éventuelles redirections.");
+    }
+    if (typeof contents !== "string" || contents.trim() !== expected) {
+      fail(409, "file_not_verified", "Le fichier HTTPS est absent ou ne contient pas le code de vérification attendu.");
+    }
   }
 
   return transaction(db, () => {
