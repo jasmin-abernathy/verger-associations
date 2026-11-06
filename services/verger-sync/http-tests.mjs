@@ -129,3 +129,56 @@ test("HTTP: inscription d'une association par preuve DNS et rôle administrateur
     db.close();
   }
 });
+
+
+test("HTTP: l'association peut choisir un fichier HTTPS au lieu d'un enregistrement TXT", async () => {
+  const db = openAuthorityDatabase(":memory:");
+  let file = "";
+  const app = express();
+  mountAuthorityApi(app, {
+    db,
+    allowedOrigins: ["https://verger.example.test"],
+    nativeOrigins: ["https://localhost"],
+    dnsResolver: async () => { throw Error("TXT lookup must not run when using file verification"); },
+    fileReader: async host => {
+      assert.equal(host, "association.fr");
+      return file;
+    },
+  });
+  const server = app.listen(0, "127.0.0.1");
+  await new Promise(resolve => server.once("listening", resolve));
+  const base = "http://127.0.0.1:" + server.address().port + "/api/v1";
+  async function post(path, body) {
+    const response = await fetch(base + path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: "https://verger.example.test" },
+      body: JSON.stringify(body),
+    });
+    return { status: response.status, body: await response.json() };
+  }
+  try {
+    const started = await post("/organizations/verification/start", { domain: "association.fr" });
+    assert.equal(started.status, 201);
+    assert.equal(started.body.fileUrl, "https://association.fr/verger-verification.txt");
+    const payload = {
+      challengeId: started.body.challengeId,
+      dnsValue: started.body.dnsValue,
+      method: "file",
+      name: "Association test",
+      email: "responsable@association.fr",
+      password: "mot-de-passe-long-1234",
+      modules: ["members", "events", "chat"],
+    };
+    assert.equal((await post("/organizations/verification/complete", payload)).status, 409);
+    file = started.body.fileContents;
+    const registered = await post("/organizations/verification/complete", payload);
+    assert.equal(registered.status, 201);
+    assert.equal(registered.body.account.role, "administrator");
+    assert.equal(registered.body.organization.domainVerified, true);
+    assert.equal((await post("/organizations/verification/start", { domain: "association.fr" })).status, 409);
+  } finally {
+    server.closeAllConnections();
+    await new Promise(resolve => server.close(resolve));
+    db.close();
+  }
+});

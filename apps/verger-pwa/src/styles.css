@@ -260,3 +260,15 @@ html[data-setup="true"] .app-shell { display: block; max-width: 65rem; }
 
 .setup-logo-preview { display: block; max-width: 120px; max-height: 120px; object-fit: contain; margin: .8rem 0; border-radius: .7rem; }
 .brand img { object-fit: contain; border-radius: .5rem; }
+
+
+/* Choix accessible des preuves DNS ou fichier HTTPS. */
+.setup-methods { padding: .75rem; margin: .4rem 0 1rem; border: 1px solid var(--border); border-radius: .75rem; }
+.setup-methods legend { font-weight: 800; padding: 0 .35rem; }
+.setup-methods .button-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
+.setup-methods button { text-align: center; min-width: 0; overflow-wrap: anywhere; }
+.setup-methods button[aria-pressed="true"] { background: var(--green); color: white; border-color: var(--green); }
+.setup-method-content { margin: .9rem 0; }
+.dns-file-url { padding: .75rem; background: var(--surface-2); border-radius: .55rem; overflow-wrap: anywhere; }
+.dns-file-url code { user-select: all; }
+@media (max-width: 32rem) { .setup-methods .button-row { grid-template-columns: 1fr; } }
