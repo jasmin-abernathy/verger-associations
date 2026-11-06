@@ -2,16 +2,21 @@ import { DECISION_METHODS, WELCOME_STEPS, activeRecords, counts } from "./domain
 import { empty, escapeHtml as e, formatDate, heading, stat } from "./helpers.js";
 import { meetingCard } from "./meetings.js";
 import { renderIdeas, renderResources, renderAttendance, renderVolunteers } from "./community.js";
+import { MODULES, DEFAULT_MODULES } from "./setup.js";
 
 export function renderView(name, state, context) {
-  const renderers = { dashboard, members, welcome, meetings, decisions, actions, events, volunteers, help, ideas: renderIdeas, resources: renderResources, consultations, chat, more, settings };
+  const renderers = { dashboard, members, welcome, meetings, decisions, actions, events, volunteers, help, ideas: renderIdeas, resources: renderResources, consultations, chat, more, admin, settings };
+  if (["members", "welcome", "admin", "settings"].includes(name) && (context.authority?.account?.role !== "administrator" || context.authority.account.organizationId !== state.organization?.id)) {
+    return heading("Accès réservé", "Cette page est réservée aux responsables de l'association.");
+  }
   return renderers[name]?.(state, context) || "";
 }
 
-function dashboard(state) {
+function dashboard(state, context) {
   const c = counts(state);
   const nextActions = activeRecords(state.actions).filter((item) => !item.done).slice(0, 5);
   return `${heading("Accueil", "Une vue simple de ce qui demande de l’attention.")}
+    ${context.setupNeeded ? '<article class="card"><h2>Votre association n’est pas encore vérifiée</h2><p>Explorez en local ou configurez votre espace avec vérification DNS.</p><button type="button" data-action="setup-resume">Configurer mon association</button></article>' : ""}
     <div class="stats">${stat(c.members,"membres")}${stat(c.meetings,"réunions")}${stat(c.decisions,"décisions")}${stat(c.openActions,"actions ouvertes")}${stat(c.events,"événements")}${stat(c.volunteerNeeds,"besoins bénévoles")}</div>
     <div class="grid-2"><article class="card"><h2>À faire</h2>${nextActions.length ? `<ul class="clean-list">${nextActions.map(actionRow).join("")}</ul>` : empty("Aucune action ouverte.")}</article>
     <article class="card"><h2>Principe du Verger</h2><p>Les données sont enregistrées d’abord sur cet appareil. La connexion sert à synchroniser, pas à rendre l’application utilisable.</p><p class="muted">Aucun compte externe, aucune publicité, aucune télémétrie.</p></article></div>`;
@@ -276,16 +281,34 @@ function formatDateTime(value) {
   catch { return value; }
 }
 
-function more() {
-  return `${heading("Autres modules", "Le socle est prêt à accueillir les fonctions validées par le pilote.")}<div class="module-grid">${[
-    ["Signalements","Remontée et suivi d’un problème."],["Alertes","Qualification d’alertes externes."],["Jugement majoritaire","Urne Mieux Voter puis import du résultat agrégé."],
-  ].map(([title,text]) => `<article class="card"><span class="badge">À venir</span><h2>${title}</h2><p>${text}</p></article>`).join("")}</div>`;
+function more(state, context) {
+  const enabled = state.organization?.modules || DEFAULT_MODULES;
+  const available = MODULES.filter(([id]) => enabled.includes(id) && !["members","welcome"].includes(id));
+  const isAdmin = context.authority?.account?.role === "administrator" && context.authority.account.organizationId === state.organization?.id;
+  return `${heading("Tous les modules", "Naviguez sans faire défiler une longue barre horizontale.")}
+    <div class="module-grid">${available.map(([id,title]) => `<article class="card"><h2>${e(title)}</h2><button type="button" data-action="open-view" data-view="${e(id)}">Ouvrir</button></article>`).join("")}
+    ${isAdmin ? '<article class="card"><h2>Administration</h2><button type="button" data-action="open-view" data-view="admin">Gérer l’association</button></article>' : ""}</div>`;
+}
+
+function admin(state, context) {
+  return `${heading("Administration", "Les paramètres et la gestion des adhérents sont réservés aux responsables.")}
+    <div class="module-grid">
+      <article class="card"><h2>Membres</h2><p>Fiches et rôles des adhérents.</p><button type="button" data-action="open-view" data-view="members">Gérer les membres</button></article>
+      <article class="card"><h2>Accueil des nouveaux</h2><p>Suivre l’intégration des membres.</p><button type="button" data-action="open-view" data-view="welcome">Voir les suivis</button></article>
+      <article class="card"><h2>Paramètres</h2><p>Modules, couleurs, sauvegarde et serveur.</p><button type="button" data-action="open-view" data-view="settings">Ouvrir les réglages</button></article>
+    </div>
+    <p class="warning">Le serveur protège les comptes et consultations. Le document local-first reste un prototype : le partage par jeton Sync ne fournit pas encore des permissions complètes par membre.</p>`;
 }
 
 function settings(state, context) {
   return `${heading("Réglages", "L’application reste utilisable sans serveur. La synchro distante est facultative.")}
     <div class="grid-2">
       <article class="card"><h2>Association</h2><form data-form="organization" class="form"><label>Nom<input name="name" required maxlength="180" value="${e(state.organization.name || "")}"></label><label>Description<textarea name="description" maxlength="1000" rows="3">${e(state.organization.description || "")}</textarea></label><button>Enregistrer</button></form></article>
+      <article class="card"><h2>Personnalisation</h2><form data-form="modules" class="form">
+        <label>Couleur principale<input name="themeColor" type="color" value="${e(state.organization.themeColor || "#315f3a")}"></label>
+        <fieldset class="setup-modules"><legend>Modules activés</legend>${MODULES.map(([id,title]) => `<label class="module-choice"><input type="checkbox" name="module" value="${e(id)}" ${(state.organization.modules || DEFAULT_MODULES).includes(id) ? "checked" : ""}><span>${e(title)}</span></label>`).join("")}</fieldset>
+        <button>Enregistrer</button></form>
+        <p class="muted">Domaine : <strong>${e(state.organization.domain || "Non vérifié")}</strong></p></article>
       <article class="card"><h2>Sauvegarde et partage</h2><p>Le lien contient l’identifiant du document Automerge. Traite-le comme un lien privé.</p><p class="muted">Importer une sauvegarde ouvre un <strong>nouvel espace</strong> et ne remplace pas silencieusement le document courant. L’export JSON contient l’état métier, pas l’historique CRDT Automerge.</p><div class="button-row"><button type="button" data-action="copy-link">Copier le lien du document</button><button type="button" class="secondary" data-action="export">Exporter JSON</button><button type="button" class="secondary" data-action="import">Importer</button><input id="import-file" type="file" accept="application/json,.json" hidden></div></article>
       <article class="card"><h2>Serveur Verger</h2><form data-form="sync" class="form">
         <label>API comptes et consultations<input name="apiUrl" type="text" inputmode="url" autocapitalize="none" spellcheck="false" placeholder="https://verger.exemple.fr/api/v1" value="${e(context.apiUrl)}"></label>
@@ -330,9 +353,9 @@ function actionRow(action) {
 
 function chat(_state, context) {
   if (context.embeddedSimplex) return `${heading("Discussion", "Les échanges restent dans cette application.")}
-    <article class="card"><h2>Votre messagerie</h2><p>Ouvrez les discussions pour créer votre profil, rejoindre le groupe de l’association ou envoyer un message.</p>
+    <article class="card"><h2>Votre messagerie</h2><p>La messagerie chiffrée est limitée au groupe privé de votre association. Une première configuration du profil peut être nécessaire.</p>
     <button type="button" data-action="open-embedded-chat">Ouvrir les discussions</button>
-    <p>Le bouton « Outils de l’association » vous ramène ici. Choisissez votre profil et votre groupe dans la messagerie : ils ne sont pas associés automatiquement à l’espace Verger.</p></article>`;
+    <p>Les responsables gèrent les invitations. Le groupe est associé localement à ce téléphone.</p></article>`;
   const link = context.simplexLink || "";
   return `${heading("Discussion SimpleX", "Retrouver le groupe de votre association dans SimpleX.")}
     <article class="card"><h2>Échanger avec le groupe</h2>
