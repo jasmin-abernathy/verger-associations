@@ -118,6 +118,10 @@ html[data-accessible="true"] body { --bg: #fff; --surface: #fff; --surface-2: #f
 html[data-accessible="true"] a { text-decoration: underline; text-underline-offset: .2em; }
 html[data-accessible="true"] * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 
+.member-assignment { display: grid; gap: .6rem; margin-top: .75rem; padding: .75rem; border: 1px solid var(--border); border-radius: .65rem; }
+.member-assignment progress { display: block; width: 100%; accent-color: var(--green); }
+.member-assignment .clean-list li { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+
 @media (max-width: 70rem) { .stats { grid-template-columns: repeat(3, 1fr); } .module-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 52rem) {
   .topbar { position: static; align-items: flex-start; }

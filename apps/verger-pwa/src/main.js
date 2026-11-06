@@ -20,6 +20,7 @@ import {
   updateMember,
 } from "./domain.js";
 import { slug } from "./helpers.js";
+import { addIdea, updateIdea, addResource, updateResource, setEventParticipant, setVolunteerParticipant, setVolunteerClosed, exportEventIcs } from "./community.js";
 import { exportMeetingMarkdown, importAnyJson } from "./portability.js";
 import {
   STORAGE_KEYS,
@@ -207,6 +208,18 @@ async function handleForm(form) {
     case "help-edit":
       mutate((doc) => updateHelpPost(doc, form.dataset.id, values), "Annonce mise à jour");
       break;
+    case "idea":
+      mutate((doc) => addIdea(doc, values), "Idée ajoutée");
+      break;
+    case "idea-edit":
+      mutate((doc) => updateIdea(doc, form.dataset.id, values), "Idée mise à jour");
+      break;
+    case "resource":
+      mutate((doc) => addResource(doc, values), "Ressource ajoutée");
+      break;
+    case "resource-edit":
+      mutate((doc) => updateResource(doc, form.dataset.id, values), "Ressource mise à jour");
+      break;
     case "organization":
       mutate((doc) => {
         doc.organization.name = String(values.name || "").trim().slice(0, 180) || "Mon association";
@@ -248,13 +261,34 @@ function toggleAction(input) {
   }, "Action mise à jour");
 }
 
-function closeVolunteer(id) {
+function toggleVolunteer(button) {
+  mutate((doc) => setVolunteerClosed(doc, button.dataset.id, button.dataset.closed === "true"), "Besoin mis à jour");
+}
+
+function updateParticipants(kind, id, memberId, attending) {
+  if (!memberId) return;
   mutate((doc) => {
-    const need = doc.volunteerNeeds?.[id];
-    if (!need) throw new Error("Besoin bénévole introuvable");
-    need.closed = true;
-    need.updatedAt = new Date().toISOString();
-  }, "Besoin bénévole clôturé");
+    if (kind === "event") setEventParticipant(doc, id, memberId, attending);
+    else setVolunteerParticipant(doc, id, memberId, attending);
+  }, attending ? "Membre inscrit" : "Inscription retirée");
+  render();
+}
+
+function exportCalendarEvent(id) {
+  try {
+    const event = currentDoc().events?.[id];
+    if (!event) throw new Error("Événement introuvable");
+    const ics = exportEventIcs(event);
+    const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = slug(event.title) + ".ics";
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast("Calendrier exporté");
+  } catch (error) { showToast(error?.message || "Export impossible", true); }
 }
 
 function toggleWelcome(input) {
@@ -607,6 +641,7 @@ document.addEventListener("change", (event) => {
   if (target.matches?.("[data-toggle-agenda]")) toggleAgenda(target);
   if (target.matches?.("[data-toggle-action]")) toggleAction(target);
   if (target.matches?.("[data-welcome-step]")) toggleWelcome(target);
+  if (target.matches?.("[data-assignment-kind]") && target.value) updateParticipants(target.dataset.assignmentKind, target.dataset.assignmentId, target.value, true);
 });
 
 document.addEventListener("click", (event) => {
@@ -615,7 +650,10 @@ document.addEventListener("click", (event) => {
   const action = button.dataset.action;
   if (action === "open-embedded-chat" && embeddedSimplex) { window.VergerNative.openChat(); return; }
   if (action === "copy-simplex-link") void copyText(readSimplexLink(localStorage, handle.url), "Lien SimpleX copié");
-  if (action === "close-volunteer") closeVolunteer(button.dataset.id);
+  if (action === "toggle-volunteer") toggleVolunteer(button);
+  if (action === "remove-volunteer") updateParticipants("volunteer", button.dataset.id, button.dataset.memberId, false);
+  if (action === "remove-attendance") updateParticipants("event", button.dataset.id, button.dataset.memberId, false);
+  if (action === "export-event-ics") exportCalendarEvent(button.dataset.id);
   if (action === "toggle-help") toggleHelp(button);
   if (action === "archive-item") archiveItem(button);
   if (action === "toggle-poll-create") togglePollCreate();
