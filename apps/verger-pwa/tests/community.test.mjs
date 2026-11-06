@@ -18,6 +18,9 @@ assert.doesNotMatch(renderIdeas(doc), /<script>/);
 const resource = addResource(doc, { title: "Fiche accueil", url: "https://example.org/accueil" });
 updateResource(doc, resource, { title: "Fiche d'accueil", description: "Un lien utile", url: "https://example.org/" });
 assert.match(renderResources(doc), /Fiche d&#039;accueil/);
+doc.resources[resource].url = "javascript:alert(1)";
+assert.doesNotMatch(renderResources(doc), /href="javascript:/);
+doc.resources[resource].url = "https://example.org/";
 for (const url of ["javascript:alert(1)", "file:///tmp/file", "https://user:password@example.org"]) {
   assert.throws(() => validateResourceUrl(url));
 }

@@ -634,6 +634,12 @@ document.addEventListener("change", (event) => {
 });
 
 document.addEventListener("click", (event) => {
+  const external = event.target.closest?.('a[target="_blank"][href]');
+  if (external && typeof window.VergerNative?.openExternal === "function") {
+    event.preventDefault();
+    window.VergerNative.openExternal(external.href);
+    return;
+  }
   const button = event.target.closest?.("[data-action]");
   if (!button) return;
   const action = button.dataset.action;

@@ -144,12 +144,16 @@ export function renderIdeas(state) {
     '</div>' + archiveList(archived, "ideas") + '</article><article class="card"><h2>Proposer une idée</h2><form data-form="idea" class="form">' +
     ideaFields(null) + '<button>Proposer l’idée</button></form></article></div>';
 }
+function safeStoredUrl(value) {
+  try { return validateResourceUrl(value); } catch { return ""; }
+}
+
 export function renderResources(state) {
   const records = Object.values(state.resources || {});
   const active = records.filter(item => !item.archived).reverse(), archived = records.filter(item => item.archived);
   const cards = active.map(item =>
     '<article class="subcard"><h3>' + e(item.title) + '</h3>' + (item.description ? '<p>' + e(item.description) + '</p>' : '') +
-    (item.url && validateResourceUrl(item.url) ? '<p><a href="' + e(item.url) + '" rel="noopener noreferrer" target="_blank">Consulter la ressource (site externe)</a></p>' : '') +
+    (safeStoredUrl(item.url) ? '<p><a href="' + e(safeStoredUrl(item.url)) + '" rel="noopener noreferrer" target="_blank">Consulter la ressource (site externe)</a></p>' : '') +
     '<details><summary>Modifier</summary><form data-form="resource-edit" data-id="' + e(item.id) + '" class="form">' +
     resourceFields(item) + '<div class="button-row"><button>Enregistrer</button><button class="secondary" type="button" data-action="archive-item" data-collection="resources" data-id="' + e(item.id) + '" data-archived="true">Archiver</button></div></form></details></article>'
   ).join("");
