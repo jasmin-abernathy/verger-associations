@@ -42,12 +42,28 @@ export function renderSetupWizard(s, apiUrl) {
       ${!apiUrl ? '<details><summary>Adresse du serveur Verger (prototype)</summary><label>URL du serveur<input name="apiUrl" type="url" placeholder="https://serveur.fr/api/v1"></label></details>' : `<p class="muted">Serveur : ${e(apiUrl)}</p>`}
       <button>Obtenir mon code de vérification</button></form>${actionRow}</article>`;
   const challenge = s.challenge;
+  const method = s.method === "file" ? "file" : "dns";
+  const methodSelector = `<fieldset class="setup-methods"><legend>Comment souhaitez-vous vérifier votre domaine ?</legend>
+    <div class="button-row">
+      <button type="button" class="secondary" data-action="setup-method" data-method="dns" aria-pressed="${method === "dns"}">Via les DNS (TXT)</button>
+      <button type="button" class="secondary" data-action="setup-method" data-method="file" aria-pressed="${method === "file"}">Via un fichier sur le site</button>
+    </div></fieldset>`;
+  const proof = method === "dns"
+    ? `<p>Ajoutez cet enregistrement dans la zone DNS du domaine, sans modifier vos serveurs DNS.</p>
+      <dl class="dns-details"><dt>Type</dt><dd>TXT</dd><dt>Nom</dt><dd><code>${e(challenge?.dnsName || "")}</code></dd><dt>Valeur</dt><dd><code>${e(challenge?.dnsValue || "")}</code></dd></dl>
+      <button type="button" class="secondary" data-action="setup-copy-dns">Copier la valeur TXT</button>
+      <p class="muted">La propagation DNS peut prendre quelques minutes, parfois davantage.</p>`
+    : `<p>Téléchargez le fichier ci-dessous puis déposez-le <strong>à la racine publique de votre site</strong>, là où se trouve sa page d'accueil (par exemple via FTP ou le gestionnaire de fichiers de l'hébergement). Ne renommez pas le fichier.</p>
+      <div class="button-row"><button type="button" data-action="setup-download-proof">Télécharger ${e(challenge?.fileName || "verger-verification.txt")}</button></div>
+      <p>Une fois déposé, il doit être accessible à cette adresse exacte :</p>
+      <p class="dns-file-url"><code>${e(challenge?.fileUrl || ("https://" + (challenge?.domain || s.domain) + "/verger-verification.txt"))}</code></p>
+      <p class="muted">Le serveur vérifie le fichier en HTTPS, sans suivre de redirection. Si votre site renvoie automatiquement vers « www », utilisez ce domaine exact lors de l'inscription.</p>`;
   return `${intro}<article class="card setup-card"><h2>Vérifier ${e(challenge?.domain || s.domain)}</h2>
-    <p>Dans la zone DNS de votre domaine, ajoutez cet enregistrement. Aucun accès à votre hébergement n'est nécessaire.</p>
-    <dl class="dns-details"><dt>Type</dt><dd>TXT</dd><dt>Nom</dt><dd><code>${e(challenge?.dnsName || "")}</code></dd><dt>Valeur</dt><dd><code>${e(challenge?.dnsValue || "")}</code></dd></dl>
-    <button type="button" class="secondary" data-action="setup-copy-dns">Copier la valeur TXT</button>
-    <p class="muted">Code valable jusqu'au ${challenge?.expiresAt ? e(new Date(challenge.expiresAt).toLocaleString("fr-FR")) : "—"}. Le DNS peut mettre du temps à se propager.</p>
-    <form data-form="setup-verify" class="form"><button>Vérifier le domaine et créer mon espace</button></form>
+    <p>Choisissez la méthode la plus simple selon les accès dont vous disposez. Aucun identifiant d'hébergement n'est demandé.</p>
+    ${methodSelector}
+    <div class="setup-method-content">${proof}</div>
+    <p class="muted">Code valable jusqu'au ${challenge?.expiresAt ? e(new Date(challenge.expiresAt).toLocaleString("fr-FR")) : "—"}.</p>
+    <form data-form="setup-verify" class="form"><button>${method === "dns" ? "Vérifier le DNS et créer mon espace" : "Vérifier le fichier et créer mon espace"}</button></form>
     <p class="warning">La synchronisation sécurisée entre plusieurs téléphones reste à provisionner séparément dans ce prototype.</p>
     ${actionRow}</article>`;
 }

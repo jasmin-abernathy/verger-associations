@@ -83,6 +83,7 @@ const setup = {
   themeColor: initialAssociation.themeColor || "#315f3a",
   modules: initialAssociation.modules || [...DEFAULT_MODULES],
   challenge: null,
+  method: "dns",
   logoDataUrl: /^data:image\/webp;base64,/.test(initialAssociation.logoDataUrl || "") ? initialAssociation.logoDataUrl : "",
 };
 let installPrompt = null;
@@ -167,7 +168,7 @@ async function handleSetupForm(form, type, values) {
     if (type === "setup-verify") {
       if (!setup.challenge) throw new Error("Demandez à nouveau un code de vérification");
       const data = await completeDomainRegistration({
-        challengeId: setup.challenge.challengeId, dnsValue: setup.challenge.dnsValue,
+        challengeId: setup.challenge.challengeId, dnsValue: setup.challenge.dnsValue, method: setup.method,
         name: setup.name, description: setup.description, domain: setup.challenge.domain,
         email: setup.email, password: setup.password, themeColor: setup.themeColor, modules: setup.modules,
       });
@@ -809,6 +810,19 @@ document.addEventListener("click", (event) => {
   if (action === "setup-resume") { setup.active = true; setup.step = 0; render(); return; }
   if (action === "setup-back") { setup.step = Math.max(0, setup.step - 1); render(); return; }
   if (action === "setup-copy-dns" && setup.challenge) { void copyText(setup.challenge.dnsValue, "Valeur TXT copiée"); return; }
+  if (action === "setup-method" && ["dns", "file"].includes(button.dataset.method)) {
+    setup.method = button.dataset.method;
+    render();
+    return;
+  }
+  if (action === "setup-download-proof" && setup.challenge) {
+    saveDownloadedText(
+      setup.challenge.fileName || "verger-verification.txt",
+      "text/plain",
+      setup.challenge.fileContents || (setup.challenge.dnsValue + "\n"),
+    );
+    return;
+  }
   if (action === "open-view" && viewAllowed(button.dataset.view)) { currentView = button.dataset.view; render(); return; }
   if (action === "open-embedded-chat" && embeddedSimplex) { window.VergerNative.openChat(); return; }
   if (action === "copy-simplex-link") void copyText(readSimplexLink(localStorage, handle.url), "Lien SimpleX copié");

@@ -30,6 +30,27 @@ test("assistant de configuration : nom échappé, modules, contact et code DNS",
   assert.doesNotMatch(verify, /name="password"/);
 });
 
+test("deux méthodes de validation disponibles avec le même défi", () => {
+  const challenge = {
+    domain: "asso.fr", dnsName: "_verger.asso.fr",
+    dnsValue: "verger-domain-verification=test-code",
+    fileName: "verger-verification.txt",
+    fileUrl: "https://asso.fr/verger-verification.txt",
+    fileContents: "verger-domain-verification=test-code\n",
+    expiresAt: "2026-11-06T22:00:00Z",
+  };
+  const original = renderSetupWizard({ ...s, step: 3, method: "dns", challenge }, "");
+  assert.match(original, /data-action="setup-method" data-method="dns"/);
+  assert.match(original, /data-action="setup-method" data-method="file"/);
+  assert.match(original, /TXT/);
+  assert.match(original, /Vérifier le DNS et créer mon espace/);
+  const alternate = renderSetupWizard({ ...s, step: 3, method: "file", challenge }, "");
+  assert.match(alternate, /Télécharger verger-verification\.txt/);
+  assert.match(alternate, /https:\/\/asso\.fr\/verger-verification\.txt/);
+  assert.match(alternate, /Vérifier le fichier et créer mon espace/);
+  assert.doesNotMatch(alternate, /name="password"/);
+});
+
 test("les outils sensibles sont absents des écrans membre et accessibles à l'admin", () => {
   const state = createInitialState("Association pilote");
   const regular = { authority: { account: { role: "member", organizationId: state.organization.id } } };
