@@ -23,6 +23,24 @@ const COOKIE = "verger_session";
 
 export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins = [], nativeOrigins = [], dnsResolver }) {
   const mutationOrigins = [...new Set([...allowedOrigins, ...nativeOrigins])];
+  // Limitation par IP plutôt que par domaine : un tiers ne doit pas pouvoir
+  // saturer les défis d'une association et bloquer le propriétaire du DNS.
+  const domainChallengeRates = new Map();
+  function challengeRateLimited(request) {
+    const key = String(request.ip || request.socket?.remoteAddress || "");
+    const nowMs = Date.now();
+    const previous = domainChallengeRates.get(key);
+    const current = !previous || previous.until < nowMs ? { count: 0, until: nowMs + 3600000 } : previous;
+    current.count++;
+    domainChallengeRates.set(key, current);
+    if (domainChallengeRates.size > 10000) {
+      for (const [ip, entry] of domainChallengeRates) {
+        if (entry.until < nowMs) domainChallengeRates.delete(ip);
+      }
+    }
+    return current.count > 20;
+  }
+
 
   app.use("/api/v1", (request, response, next) => {
     response.setHeader("Cache-Control", "no-store");
@@ -50,6 +68,10 @@ export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins
 
   app.post("/api/v1/organizations/verification/start", (request, response, next) => {
     try {
+      if (challengeRateLimited(request)) {
+        response.status(429).json({ error: "too_many_challenges", message: "Trop de demandes depuis cette connexion. Réessayez plus tard." });
+        return;
+      }
       const challenge = startDomainVerification(db, request.body?.domain);
       response.status(201).json(challenge);
     } catch (error) { next(error); }
