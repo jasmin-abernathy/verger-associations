@@ -83,6 +83,7 @@ const setup = {
   themeColor: initialAssociation.themeColor || "#315f3a",
   modules: initialAssociation.modules || [...DEFAULT_MODULES],
   challenge: null,
+  logoDataUrl: /^data:image\/webp;base64,/.test(initialAssociation.logoDataUrl || "") ? initialAssociation.logoDataUrl : "",
 };
 let installPrompt = null;
 let toastTimer = null;
@@ -103,6 +104,34 @@ document.documentElement.dataset.native = String(nativePlatform);
 document.documentElement.dataset.platform = platformName;
 if (nativePlatform) installButton.hidden = true;
 
+async function prepareLogo(file) {
+  if (!file) return "";
+  if (!["image/png", "image/jpeg", "image/webp"].includes(file.type) || file.size > 8 * 1024 * 1024) {
+    throw new Error("Utilisez un logo PNG, JPEG ou WebP de 8 Mo maximum");
+  }
+  const url = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    image.src = url;
+    await image.decode();
+    const side = 512;
+    const scale = Math.min(1, side / Math.max(image.naturalWidth, image.naturalHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Conversion du logo indisponible sur cet appareil");
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const output = canvas.toDataURL("image/webp", .8);
+    if (!output.startsWith("data:image/webp;base64,") || output.length > 320_000) {
+      throw new Error("Logo trop volumineux après optimisation");
+    }
+    return output;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 async function handleSetupForm(form, type, values) {
   try {
     if (type === "setup-identity") {
@@ -113,6 +142,8 @@ async function handleSetupForm(form, type, values) {
     }
     if (type === "setup-features") {
       setup.themeColor = String(values.themeColor || "#315f3a");
+      const upload = form.querySelector('input[name="logo"]')?.files?.[0];
+      if (upload) setup.logoDataUrl = await prepareLogo(upload);
       setup.modules = new FormData(form).getAll("module").filter(m => MODULES.some(([id]) => id === m));
       setup.step = 2;
     }
@@ -148,6 +179,7 @@ async function handleSetupForm(form, type, values) {
         doc.organization.domainVerified = true;
         doc.organization.setupCompleted = true;
         doc.organization.themeColor = data.organization.themeColor;
+        if (setup.logoDataUrl) doc.organization.logoDataUrl = setup.logoDataUrl;
         doc.organization.modules = [...data.organization.modules];
       });
       setup.password = "";
@@ -206,6 +238,9 @@ function render() {
   if (!state) return;
   const onboarding = setup.active && !authorityState.publicMode;
   document.documentElement.dataset.setup = String(onboarding);
+  const icon = document.querySelector(".brand img");
+  const logoDataUrl = state.organization?.logoDataUrl || "";
+  if (icon) icon.src = /^data:image\/webp;base64,/.test(logoDataUrl) ? logoDataUrl : "./icon.svg";
   const color = state.organization?.themeColor;
   if (/^#[\da-fA-F]{6}$/.test(color || "")) document.documentElement.style.setProperty("--green", color);
   headerName.textContent = authorityState.publicMode ? "Résultats publics" : (state.organization?.name || "Mon association");
@@ -333,12 +368,23 @@ async function handleForm(form) {
         doc.organization.description = String(values.description || "").trim().slice(0, 1000);
       }, "Association mise à jour");
       break;
-    case "modules":
+    case "modules": {
+      let logoDataUrl = "";
+      try {
+        const file = form.querySelector('input[name="logo"]')?.files?.[0];
+        if (file) logoDataUrl = await prepareLogo(file);
+      } catch (error) {
+        showToast(error.message, true);
+        return;
+      }
       mutate((doc) => {
         doc.organization.modules = new FormData(form).getAll("module").filter(m => MODULES.some(([id]) => id === m));
         doc.organization.themeColor = /^#[\da-fA-F]{6}$/.test(values.themeColor || "") ? values.themeColor : "#315f3a";
+        if (values.removeLogo) delete doc.organization.logoDataUrl;
+        else if (logoDataUrl) doc.organization.logoDataUrl = logoDataUrl;
       }, "Personnalisation enregistrée");
       break;
+    }
     case "sync":
       saveServerSettings({ apiUrl: values.apiUrl, publicWebUrl: values.publicWebUrl });
       saveSyncSettings(values.url, values.token);

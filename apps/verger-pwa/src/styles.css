@@ -257,3 +257,6 @@ html[data-setup="true"] .app-shell { display: block; max-width: 65rem; }
 .dns-details dd { margin: 0; min-width: 0; }
 .dns-details code { display: block; background: var(--surface-2); padding: .65rem; border-radius: .4rem; overflow-wrap: anywhere; user-select: all; }
 @media (max-width: 36rem) { .setup-modules { grid-template-columns: 1fr; } }
+
+.setup-logo-preview { display: block; max-width: 120px; max-height: 120px; object-fit: contain; margin: .8rem 0; border-radius: .7rem; }
+.brand img { object-fit: contain; border-radius: .5rem; }

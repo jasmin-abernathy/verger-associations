@@ -29,6 +29,8 @@ export function renderSetupWizard(s, apiUrl) {
     <p class="muted">Vous pourrez modifier les modules par la suite. L'administration est réservée aux comptes habilités.</p>
     <form data-form="setup-features" class="form">
       <label>Couleur principale<input name="themeColor" type="color" value="${e(s.themeColor)}"></label>
+      <label>Logo (PNG, JPEG ou WebP)<input name="logo" type="file" accept="image/png,image/jpeg,image/webp"></label>
+      ${s.logoDataUrl ? `<img class="setup-logo-preview" src="${e(s.logoDataUrl)}" alt="Aperçu du logo de l'association">` : ""}
       <fieldset class="setup-modules"><legend>Modules visibles</legend>${MODULES.map(([id,label])=>`<label class="module-choice"><input type="checkbox" name="module" value="${e(id)}" ${s.modules.includes(id)?"checked":""}><span>${e(label)}</span></label>`).join("")}</fieldset>
       <button>Continuer</button></form>${actionRow}</article>`;
   if (s.step === 2) return `${intro}<article class="card setup-card"><h2>Domaine et compte responsable</h2>
