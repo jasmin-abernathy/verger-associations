@@ -38,6 +38,19 @@ export async function acceptInvitation({ token, password }) {
   return data;
 }
 
+export function beginDomainVerification(domain) {
+  return request("/organizations/verification/start", {
+    method: "POST", body: { domain }, authenticated: false,
+  });
+}
+
+export async function completeDomainRegistration(payload) {
+  const path = nativePlatform ? "/native/organizations/verification/complete" : "/organizations/verification/complete";
+  const data = await request(path, { method: "POST", body: payload, authenticated: false });
+  if (nativePlatform) nativeSessionToken = String(data.sessionToken || "");
+  return data;
+}
+
 export function createInvitation({ email, role, memberId = null }) {
   return request("/invitations", { method: "POST", body: { email, role, memberId: memberId || null } });
 }
