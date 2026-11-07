@@ -18,6 +18,7 @@ import {
   updatePollBeforeResponses,
 } from "./consultations-service.js";
 import { parseCookies } from "./authority-security.js";
+import { publicOrganization, requestAccess, listAccessRequests, decideAccessRequest } from "./access-requests.js";
 
 const COOKIE = "verger_session";
 
@@ -75,6 +76,40 @@ export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins
       const challenge = startDomainVerification(db, request.body?.domain);
       response.status(201).json(challenge);
     } catch (error) { next(error); }
+  });
+
+  // Public identity lookup never discloses accounts or an unverified organization.
+  app.get("/api/v1/organizations/by-domain/:domain", (request, response, next) => {
+    try { response.json({ organization: publicOrganization(db, request.params.domain) }); }
+    catch (error) { next(error); }
+  });
+  const requestLimits = new Map();
+  app.post("/api/v1/access-requests", (request, response, next) => {
+    try {
+      const ip = String(request.ip || request.socket?.remoteAddress || "");
+      const time = Date.now();
+      const last = requestLimits.get(ip);
+      const entry = !last || last.until < time ? { count: 0, until: time + 3600000 } : last;
+      if (++entry.count > 10) {
+        response.status(429).json({error:"rate_limited",message:"Trop de demandes depuis cet appareil"});
+        return;
+      }
+      requestLimits.set(ip, entry);
+      if(requestLimits.size>10000)for(const [key,value] of requestLimits)if(value.until < time)requestLimits.delete(key);
+      response.status(202).json(requestAccess(db, request.body || {}));
+    } catch (error) { next(error); }
+  });
+  app.get("/api/v1/access-requests", withSession(db), (request, response, next) => {
+    try { response.json({requests:listAccessRequests(db,request.account)}); }
+    catch (error) { next(error); }
+  });
+  app.post("/api/v1/access-requests/:id/approve", withSession(db), (request, response, next) => {
+    try { response.json(decideAccessRequest(db,request.account,request.params.id,true)); }
+    catch(error){next(error);}
+  });
+  app.post("/api/v1/access-requests/:id/reject", withSession(db), (request, response, next) => {
+    try { response.json(decideAccessRequest(db,request.account,request.params.id,false)); }
+    catch(error){next(error);}
   });
 
   // Only the server's DNS resolver can confirm domain control. The client

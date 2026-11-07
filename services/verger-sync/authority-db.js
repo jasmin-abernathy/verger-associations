@@ -122,6 +122,17 @@ export function migrateAuthorityDatabase(db) {
       created_at TEXT NOT NULL
     ) STRICT;
     CREATE INDEX IF NOT EXISTS idx_verifications_domain ON domain_verifications(domain, expires_at);
+    CREATE TABLE IF NOT EXISTS access_requests (
+      id TEXT PRIMARY KEY,
+      organization_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      email TEXT NOT NULL,
+      role TEXT NOT NULL CHECK (role IN ('facilitator','member')),
+      message TEXT NOT NULL DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
+      created_at TEXT NOT NULL,
+      resolved_at TEXT
+    ) STRICT;
+    CREATE INDEX IF NOT EXISTS idx_access_requests_org_status ON access_requests(organization_id, status, created_at);
   `);
 }
 
