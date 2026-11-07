@@ -1,5 +1,6 @@
 import { readSimplexLink, saveSimplexLink } from "./simplex.js";
 import { DEFAULT_MODULES, MODULES, renderSetupWizard } from "./setup.js";
+import { renderRoleEntry, roleForAccount, ENTRY_ROLES } from "./role-entry.js";
 import {
   addAction,
   addAgendaItem,
@@ -44,6 +45,11 @@ import {
 } from "./platform.js";
 import {
   beginDomainVerification,
+  organizationByDomain,
+  requestAssociationAccess,
+  listAssociationAccessRequests,
+  approveAssociationAccessRequest,
+  rejectAssociationAccessRequest,
   completeDomainRegistration,
   acceptInvitation as acceptAccountInvitation,
   cancelPoll as cancelAuthorityPoll,
@@ -86,6 +92,7 @@ const setup = {
   method: "dns",
   logoDataUrl: /^data:image\/webp;base64,/.test(initialAssociation.logoDataUrl || "") ? initialAssociation.logoDataUrl : "",
 };
+const entry = {view:"choices",role:"volunteer",domain:initialAssociation.domain || "",email:"",requestDone:false};
 let installPrompt = null;
 let toastTimer = null;
 let authorityState = {
@@ -96,6 +103,8 @@ let authorityState = {
   results: null,
   error: "",
   invitationCode: "",
+  accessRequests: [],
+  accessApproval: null,
   inviteToken: "",
   publicMode: Boolean(publicPollId),
   publicResults: null,
@@ -186,6 +195,7 @@ async function handleSetupForm(form, type, values) {
       setup.password = "";
       setup.challenge = null;
       setup.active = false;
+      entry.view = "inside";
       authorityState.account = data.account;
       currentView = "dashboard";
       showToast("Association créée et domaine vérifié ✓");
@@ -237,7 +247,9 @@ function viewAllowed(view, state = currentDoc()) {
 function render() {
   const state = currentDoc();
   if (!state) return;
-  const onboarding = setup.active && !authorityState.publicMode;
+  const entryVisible = !authorityState.publicMode && !authorityState.account && entry.view !== "inside" && entry.view !== "create";
+  const onboarding = !entryVisible && setup.active && !authorityState.publicMode;
+  document.documentElement.dataset.entry = String(entryVisible);
   document.documentElement.dataset.setup = String(onboarding);
   const icon = document.querySelector(".brand img");
   const logoDataUrl = state.organization?.logoDataUrl || "";
@@ -247,12 +259,14 @@ function render() {
   headerName.textContent = authorityState.publicMode ? "Résultats publics" : (state.organization?.name || "Mon association");
   if (!onboarding && !viewAllowed(currentView, state)) currentView = "dashboard";
   for (const panel of panels) {
-    const active = panel.dataset.panel === (onboarding ? "dashboard" : currentView);
+    const active = panel.dataset.panel === (entryVisible || onboarding ? "dashboard" : currentView);
     panel.hidden = !active;
-    if (active) panel.innerHTML = onboarding ? renderSetupWizard(setup, getApiBaseUrl()) : renderView(currentView, state, context());
+    if (active) panel.innerHTML = entryVisible
+      ? renderRoleEntry(entry,{apiUrl:getApiBaseUrl(),error:authorityState.error,loading:authorityState.loading})
+      : onboarding ? renderSetupWizard(setup, getApiBaseUrl()) : renderView(currentView, state, context());
   }
   for (const item of navItems) {
-    item.hidden = ["members", "welcome", "settings"].includes(item.dataset.view) || !viewAllowed(item.dataset.view, state);
+    item.hidden = entryVisible || onboarding || ["members", "welcome", "settings"].includes(item.dataset.view) || !viewAllowed(item.dataset.view, state);
     item.classList.toggle("is-active", item.dataset.view === currentView);
   }
   updateConnectionState();
@@ -294,7 +308,7 @@ async function handleForm(form) {
   const meetingId = form.dataset.meetingId || values.meetingId || "";
   const proposalId = form.dataset.proposalId || values.proposalId || "";
 
-  if (["account-login","account-accept-invite","account-invite","poll-create","poll-edit","poll-response","poll-cancel"].includes(type)) {
+  if (["entry-login","entry-request","entry-accept","access-approve","access-reject","account-login","account-accept-invite","account-invite","poll-create","poll-edit","poll-response","poll-cancel"].includes(type)) {
     await handleAuthorityForm(form, type, values);
     return;
   }
@@ -473,10 +487,16 @@ async function loadAuthority() {
     const session = await getSession();
     authorityState.account = session.account || null;
     if (authorityState.account) {
+      entry.view = "inside";
+      if (authorityState.account.role === "administrator") {
+        const requests = await listAssociationAccessRequests();
+        authorityState.accessRequests = requests.requests || [];
+      }
       const data = await listPolls();
       authorityState.polls = data.polls || [];
     } else {
       authorityState.polls = [];
+      authorityState.accessRequests = [];
       authorityState.selectedPoll = null;
       authorityState.results = null;
     }
@@ -492,6 +512,10 @@ async function refreshAuthorityPolls() {
   if (!authorityState.account) return;
   const data = await listPolls();
   authorityState.polls = data.polls || [];
+  if (authorityState.account.role === "administrator") {
+    const access = await listAssociationAccessRequests();
+    authorityState.accessRequests = access.requests || [];
+  }
 }
 
 async function openAuthorityPoll(id) {
@@ -517,6 +541,60 @@ async function openAuthorityPoll(id) {
 async function handleAuthorityForm(form, type, values) {
   try {
     authorityState.error = "";
+    if (type === "entry-request") {
+      entry.domain = String(values.domain || "").trim();
+      entry.email = String(values.email || "").trim();
+      await requestAssociationAccess({domain:entry.domain,email:entry.email,role:entry.role==="founders"?"facilitator":"member",message:values.message});
+      entry.requestDone = true;
+      render();
+      return;
+    }
+    if (type === "entry-login") {
+      entry.domain = String(values.domain || "").trim();
+      entry.email = String(values.email || "").trim();
+      const orgResult = await organizationByDomain(entry.domain);
+      const org = orgResult.organization;
+      const data = await loginAccount({organizationId:org.id,email:entry.email,password:values.password});
+      if (roleForAccount(data.account) !== entry.role) {
+        await logoutAccount();
+        throw new Error("Ce compte appartient à un autre type d’accès. Choisissez la rubrique correspondant à vos droits.");
+      }
+      const existing = currentDoc()?.organization;
+      if (existing?.domainVerified && existing.id !== org.id) {
+        await logoutAccount();
+        throw new Error("Cet appareil est lié à une autre association ; il faut d’abord isoler ses données.");
+      }
+      changeDoc(doc=>{
+        doc.organization.id=org.id;
+        doc.organization.name=org.name;
+        doc.organization.domain=org.domain;
+        doc.organization.domainVerified=true;
+        doc.organization.setupCompleted=true;
+      });
+      setup.active=false;
+      entry.view="inside";
+      authorityState.account=data.account;
+      await refreshAuthorityPolls();
+      showToast("Compte connecté. Synchronisation des données entre appareils encore indisponible dans ce pilote.");
+      render();
+      return;
+    }
+    if (type === "entry-accept") {
+      const data = await acceptAccountInvitation({token:values.token,password:values.password});
+      if (roleForAccount(data.account) !== entry.role) {
+        await logoutAccount();
+        throw new Error("Le code correspond à un autre type d’accès : sélectionnez le bon espace.");
+      }
+      authorityState.account=data.account;
+      // An invitation carries an organization id but not a local Automerge document.
+      // Do not unlock local business modules until a corresponding document exists.
+      entry.view="inside";
+      setup.active=false;
+      await refreshAuthorityPolls();
+      showToast("Compte activé. Les données partagées ne sont pas encore synchronisées sur ce téléphone.");
+      render();
+      return;
+    }
     if (type === "account-login") {
       const data = await loginAccount({
         organizationId: currentDoc().organization.id,
@@ -537,6 +615,22 @@ async function handleAuthorityForm(form, type, values) {
       showToast("Compte créé et connecté");
     }
 
+    if (type === "access-approve") {
+      const data = await approveAssociationAccessRequest(values.requestId);
+      authorityState.accessApproval = {email:data.email,token:data.invitation.token,role:data.role};
+      await refreshAuthorityPolls();
+      showToast("Demande approuvée : communiquez le code à la personne concernée.");
+      render();
+      return;
+    }
+    if (type === "access-reject") {
+      await rejectAssociationAccessRequest(values.requestId);
+      authorityState.accessApproval = null;
+      await refreshAuthorityPolls();
+      showToast("Demande refusée");
+      render();
+      return;
+    }
     if (type === "account-invite") {
       const data = await createAccountInvitation({
         email: values.email,
@@ -640,6 +734,9 @@ async function logOutAuthority() {
   authorityState.selectedPoll = null;
   authorityState.results = null;
   authorityState.invitationCode = "";
+  authorityState.accessRequests = [];
+  authorityState.accessApproval = null;
+  entry.view = "choices";
   showToast("Déconnecté");
   render();
 }
@@ -717,7 +814,6 @@ function renumberPollOptions(list) {
 function saveDownloadedText(filename, type, text) {
   if (typeof window.VergerNative?.saveText === "function") {
     window.VergerNative.saveText(filename, type, text);
-    showToast("Choisissez où enregistrer ce fichier.");
     return;
   }
   const url = URL.createObjectURL(new Blob([text], { type: type + ";charset=utf-8" }));
@@ -806,8 +902,20 @@ document.addEventListener("click", (event) => {
   const button = event.target.closest?.("[data-action]");
   if (!button) return;
   const action = button.dataset.action;
-  if (action === "setup-explore") { setup.active = false; currentView = "dashboard"; render(); return; }
-  if (action === "setup-resume") { setup.active = true; setup.step = 0; render(); return; }
+  if (action === "entry-home") { entry.view="choices"; authorityState.error=""; entry.requestDone=false; render(); return; }
+  if (action === "entry-role" && ENTRY_ROLES.some(role=>role.key===button.dataset.role)) {
+    entry.role=button.dataset.role;
+    entry.view=entry.role==="presidents"?"presidents":"login";
+    authorityState.error=""; entry.requestDone=false; render(); return;
+  }
+  if (action === "entry-login") {entry.view="login";authorityState.error="";render();return;}
+  if (action === "entry-request" && entry.role!=="presidents") {entry.view="request";authorityState.error="";render();return;}
+  if (action === "entry-accept") {entry.view="accept";authorityState.error="";render();return;}
+  if (action === "entry-create" && entry.role==="presidents") {
+    setup.active=true; setup.step=0; entry.view="create"; authorityState.error="";render();return;
+  }
+  if (action === "setup-explore") { setup.active = false; entry.view = "inside"; currentView = "dashboard"; render(); return; }
+  if (action === "setup-resume") { setup.active = true; entry.view = "create"; setup.step = 0; render(); return; }
   if (action === "setup-back") { setup.step = Math.max(0, setup.step - 1); render(); return; }
   if (action === "setup-copy-dns" && setup.challenge) { void copyText(setup.challenge.dnsValue, "Valeur TXT copiée"); return; }
   if (action === "setup-method" && ["dns", "file"].includes(button.dataset.method)) {

@@ -51,6 +51,20 @@ export async function completeDomainRegistration(payload) {
   return data;
 }
 
+export function organizationByDomain(domain) {
+  return request("/organizations/by-domain/" + encodeURIComponent(domain), { authenticated: false });
+}
+export function requestAssociationAccess({ domain, email, role, message = "" }) {
+  return request("/access-requests", {method:"POST",authenticated:false,body:{domain,email,role,message}});
+}
+export function listAssociationAccessRequests() { return request("/access-requests"); }
+export function approveAssociationAccessRequest(id) {
+  return request("/access-requests/" + encodeURIComponent(id) + "/approve", {method:"POST",body:{}});
+}
+export function rejectAssociationAccessRequest(id) {
+  return request("/access-requests/" + encodeURIComponent(id) + "/reject", {method:"POST",body:{}});
+}
+
 export function createInvitation({ email, role, memberId = null }) {
   return request("/invitations", { method: "POST", body: { email, role, memberId: memberId || null } });
 }

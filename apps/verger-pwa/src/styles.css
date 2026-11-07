@@ -272,3 +272,12 @@ html[data-setup="true"] .app-shell { display: block; max-width: 65rem; }
 .dns-file-url { padding: .75rem; background: var(--surface-2); border-radius: .55rem; overflow-wrap: anywhere; }
 .dns-file-url code { user-select: all; }
 @media (max-width: 32rem) { .setup-methods .button-row { grid-template-columns: 1fr; } }
+
+/* Accueil par rôle (commun à toutes les associations) */
+html[data-entry="true"] .sidebar,html[data-setup="true"] .sidebar {display:none}
+html[data-entry="true"] .app-shell,html[data-setup="true"] .app-shell {display:block;max-width:55rem}
+.entry-choices{display:grid;gap:.85rem;max-width:42rem;margin:1rem auto}
+.entry-choice{display:grid;gap:.25rem;padding:1.15rem;text-align:left;background:var(--surface);color:var(--text);border:1px solid var(--border);border-left:5px solid var(--green)}
+.entry-choice:hover,.entry-choice:focus-visible{background:var(--surface-2)}
+.entry-choice strong{font-size:1.13rem}.entry-choice span{font-size:.9rem;color:var(--muted);font-weight:400}
+.entry-form{max-width:42rem;margin:0 auto}.entry-actions{display:flex;flex-wrap:wrap;gap:.65rem;margin-top:1rem}

@@ -3,6 +3,7 @@ import { test } from "node:test";
 import { createInitialState } from "../src/domain.js";
 import { DEFAULT_MODULES, renderSetupWizard } from "../src/setup.js";
 import { renderView } from "../src/views.js";
+import { renderRoleEntry, ENTRY_ROLES, roleForAccount } from "../src/role-entry.js";
 
 const s = {
   name: "Les <Amis> du Verger", description: "Accueil & entraide",
@@ -62,4 +63,21 @@ test("les outils sensibles sont absents des écrans membre et accessibles à l'a
   assert.match(renderView("admin", state, admin), /Gérer les membres/);
   assert.match(renderView("admin", state, regular), /Espace responsable/);
   assert.doesNotMatch(renderView("admin", state, regular), /Jeton Sync/);
+});
+
+test("accueil : Bénévoles, Bureau / fondateurs puis Présidence / coprésidence, sans privilège implicite", () => {
+  assert.deepEqual(ENTRY_ROLES.map(x => x.key), ["volunteer","founders","presidents"]);
+  const home = renderRoleEntry({view:"choices"});
+  const locations = ["Bénévoles","Bureau / fondateurs","Présidence / coprésidence"].map(label=>home.indexOf(label));
+  assert.ok(locations.every(n=>n>0) && locations[0]<locations[1] && locations[1]<locations[2]);
+  assert.match(renderRoleEntry({view:"login",role:"volunteer"}), /data-form="entry-login"/);
+  assert.match(renderRoleEntry({view:"login",role:"founders"}), /data-action="entry-request"/);
+  assert.doesNotMatch(renderRoleEntry({view:"login",role:"presidents"}), /data-action="entry-request"/);
+  assert.match(renderRoleEntry({view:"request",role:"volunteer"}), /data-form="entry-request"/);
+  assert.match(renderRoleEntry({view:"accept",role:"founders"}), /data-form="entry-accept"/);
+  assert.equal(roleForAccount({role:"administrator"}),"presidents");
+  assert.equal(roleForAccount({role:"facilitator"}),"founders");
+  assert.equal(roleForAccount({role:"member"}),"volunteer");
+  assert.equal(roleForAccount({role:"reader"}),"volunteer");
+  assert.doesNotMatch(home, /<script/i);
 });
