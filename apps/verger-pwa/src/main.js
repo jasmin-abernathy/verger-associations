@@ -585,9 +585,24 @@ async function handleAuthorityForm(form, type, values) {
         await logoutAccount();
         throw new Error("Le code correspond à un autre type d’accès : sélectionnez le bon espace.");
       }
+      const org=data.organization;
+      if (!org || org.id !== data.account.organizationId || !org.domain) {
+        await logoutAccount();
+        throw new Error("Association de l’invitation introuvable");
+      }
+      const existing=currentDoc()?.organization;
+      if (existing?.domainVerified && existing.id !== org.id) {
+        await logoutAccount();
+        throw new Error("Cet appareil est lié à une autre association. Impossible de réutiliser ses données locales.");
+      }
+      changeDoc(doc=>{
+        doc.organization.id=org.id;
+        doc.organization.name=org.name;
+        doc.organization.domain=org.domain;
+        doc.organization.domainVerified=true;
+        doc.organization.setupCompleted=true;
+      });
       authorityState.account=data.account;
-      // An invitation carries an organization id but not a local Automerge document.
-      // Do not unlock local business modules until a corresponding document exists.
       entry.view="inside";
       setup.active=false;
       await refreshAuthorityPolls();

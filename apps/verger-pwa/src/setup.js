@@ -19,7 +19,7 @@ export const DEFAULT_MODULES = Object.freeze(MODULES.map(([id]) => id));
 export function renderSetupWizard(s, apiUrl) {
   const progress = `<ol class="setup-progress">${["Association", "Modules", "Responsable", "Vérification"].map((t, i) => `<li class="${s.step === i ? "active" : ""}">${e(t)}</li>`).join("")}</ol>`;
   const intro = `<div class="setup-header"><p class="eyebrow">Première installation</p><h1>Bienvenue sur Verger Associations 🌱</h1><p>Créez votre espace sans installer d'autre outil. La vérification du domaine est réalisée par le serveur.</p></div>${progress}`;
-  const actionRow = `<div class="button-row"><button type="button" class="secondary" data-action="setup-explore">Explorer en local</button>${s.step > 0 ? '<button type="button" class="secondary" data-action="setup-back">Retour</button>' : ""}</div>`;
+  const actionRow = `<div class="button-row"><button type="button" class="secondary" data-action="entry-home">Retour aux accès</button><button type="button" class="secondary" data-action="setup-explore">Explorer en local</button>${s.step > 0 ? '<button type="button" class="secondary" data-action="setup-back">Retour</button>' : ""}</div>`;
   if (s.step === 0) return `${intro}<article class="card setup-card"><h2>Votre association</h2>
     <form data-form="setup-identity" class="form">
       <label>Nom de l'association<input name="name" required maxlength="180" value="${e(s.name)}"></label>

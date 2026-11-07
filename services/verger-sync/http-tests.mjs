@@ -51,6 +51,7 @@ test('HTTP: connexion, invitations, consultation et séparation des associations
     const invitationBody = { token: invitation.data.token, password: 'member-password-1234' };
     const accepted = await req('/native/invitations/accept', { method: 'POST', origin: 'https://localhost', body: invitationBody });
     assert.equal(accepted.status, 201);
+    assert.equal(accepted.data.organization.id, "a");
     const member = accepted.data.sessionToken;
     assert.ok(member);
     assert.notEqual((await req('/native/invitations/accept', { method: 'POST', origin: 'https://localhost', body: invitationBody })).status, 201);

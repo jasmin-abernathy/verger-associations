@@ -172,7 +172,8 @@ export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins
       const account = acceptInvitation(db, request.body || {});
       const session = createSession(db, account);
       setSessionCookie(response, session.token, session.expiresAt, cookieSecure);
-      response.status(201).json({ account });
+      const organization = db.prepare("SELECT id, name, domain FROM organizations WHERE id = ?").get(account.organizationId);
+      response.status(201).json({ account, organization });
     } catch (error) { next(error); }
   });
 
@@ -180,7 +181,8 @@ export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins
     try {
       const account = acceptInvitation(db, request.body || {});
       const session = createSession(db, account);
-      response.status(201).json({ account, sessionToken: session.token, expiresAt: session.expiresAt });
+      const organization = db.prepare("SELECT id, name, domain FROM organizations WHERE id = ?").get(account.organizationId);
+      response.status(201).json({ account, organization, sessionToken: session.token, expiresAt: session.expiresAt });
     } catch (error) { next(error); }
   });
 
