@@ -316,7 +316,7 @@ function admin(state, context) {
       ${approval ? `<p role="status">Invitation pour <strong>${e(approval.email)}</strong> (${e(approval.role === "facilitator" ? "Bureau / fondateurs" : "Bénévoles")}) : <code>${e(approval.token)}</code></p><button type="button" data-action="copy-invitation-code" data-code="${e(approval.token)}">Copier le code à transmettre</button>` : ""}
       ${requests.length ? `<div class="stack">${requests.map(req=>`<div class="subcard"><p><strong>${e(req.email)}</strong> — ${e(req.role === "facilitator" ? "Bureau / fondateurs" : "Bénévoles")}</p>${req.message ? `<p>${e(req.message)}</p>` : ""}<div class="button-row"><form data-form="access-approve"><input type="hidden" name="requestId" value="${e(req.id)}"><button>Approuver</button></form><form data-form="access-reject"><input type="hidden" name="requestId" value="${e(req.id)}"><button class="secondary">Refuser</button></form></div></div>`).join("")}</div>` : '<p>Aucune demande en attente.</p>'}
     </article>
-    <p class="warning">Le serveur protège les comptes et consultations. Le document local-first reste un prototype : le partage par jeton Sync ne fournit pas encore des permissions complètes par membre.</p>
+    <p class="warning">Le serveur protège les comptes et consultations. Le document local-first reste un prototype : le partage par jeton Sync ne fournit pas encore des permissions complètes par membre.</p>`;
 }
 
 function settings(state, context) {
