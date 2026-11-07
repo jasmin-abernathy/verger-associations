@@ -972,7 +972,7 @@ document.addEventListener("click", (event) => {
       showToast("Connectez-vous à votre association avant d'ouvrir la messagerie.",true);
       return;
     }
-    window.VergerNative.openChat(token,org.id);
+    window.VergerNative.openChat(token,org.id,org.themeColor || "#315f3a");
     return;
   }
   if (action === "copy-simplex-link") void copyText(readSimplexLink(localStorage, handle.url), "Lien SimpleX copié");
