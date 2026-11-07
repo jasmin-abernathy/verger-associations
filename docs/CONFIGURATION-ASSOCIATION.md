@@ -52,3 +52,7 @@ Les demandes sont limitées par adresse IP côté serveur. Une fois le domaine i
 **Sécurité :** ces boutons ne sont pas des permissions. Le serveur vérifie un vrai compte avec rôle `member`, `facilitator` ou `administrator`. Une demande d'accès ne crée aucun compte, n'accorde aucune permission et arrive dans l'espace d'administration de l'association. La présidence peut l'approuver : le serveur émet alors un code d'invitation à communiquer à la personne par un canal choisi par l'association. **Aucun e-mail automatique n'est envoyé** et l'adresse déclarée par le demandeur n'est pas vérifiée. L'interface doit prévenir l'administrateur de cette limite.
 
 La recherche d'association par domaine n'est possible que pour les domaines déjà vérifiés. Ne jamais débloquer les modules administratifs avec un rôle choisi visuellement ou un compte appartenant à une autre association. La synchronisation des données partagées entre appareils reste hors de portée de ce pilote ; une authentification réussie ne constitue pas un accès aux données des autres appareils.
+
+## Thème de l'association
+
+La couleur choisie lors de la création ou dans les réglages est déclinée automatiquement sur les fonds, cartes, encadrés, bordures, boutons et liens ; le mode sombre calcule d'autres nuances. Les tons restent sobres et les couleurs des boutons/liens sont ajustées pour le contraste. Les textes, alertes et focus préservent leurs contrastes et conventions d'accessibilité.

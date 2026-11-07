@@ -324,7 +324,7 @@ function settings(state, context) {
     <div class="grid-2">
       <article class="card"><h2>Association</h2><form data-form="organization" class="form"><label>Nom<input name="name" required maxlength="180" value="${e(state.organization.name || "")}"></label><label>Description<textarea name="description" maxlength="1000" rows="3">${e(state.organization.description || "")}</textarea></label><button>Enregistrer</button></form></article>
       <article class="card"><h2>Personnalisation</h2><form data-form="modules" class="form">
-        <label>Couleur principale<input name="themeColor" type="color" value="${e(state.organization.themeColor || "#315f3a")}"></label>
+        <label>Couleur principale (nuances automatiques)<input name="themeColor" type="color" value="${e(state.organization.themeColor || "#315f3a")}"></label>
         <label>Logo (PNG, JPEG ou WebP)<input name="logo" type="file" accept="image/png,image/jpeg,image/webp"></label>
         ${state.organization.logoDataUrl ? `<label class="module-choice"><input name="removeLogo" type="checkbox">Retirer le logo actuel</label>` : ""}
         <fieldset class="setup-modules"><legend>Modules activés</legend>${MODULES.map(([id,title]) => `<label class="module-choice"><input type="checkbox" name="module" value="${e(id)}" ${(state.organization.modules || DEFAULT_MODULES).includes(id) ? "checked" : ""}><span>${e(title)}</span></label>`).join("")}</fieldset>

@@ -4,6 +4,7 @@ import { createInitialState } from "../src/domain.js";
 import { DEFAULT_MODULES, renderSetupWizard } from "../src/setup.js";
 import { renderView } from "../src/views.js";
 import { renderRoleEntry, ENTRY_ROLES, roleForAccount } from "../src/role-entry.js";
+import { associationPalette, contrastRatio } from "../src/theme-palette.js";
 
 const s = {
   name: "Les <Amis> du Verger", description: "Accueil & entraide",
@@ -80,4 +81,18 @@ test("accueil : Bénévoles, Bureau / fondateurs puis Présidence / coprésidenc
   assert.equal(roleForAccount({role:"member"}),"volunteer");
   assert.equal(roleForAccount({role:"reader"}),"volunteer");
   assert.doesNotMatch(home, /<script/i);
+});
+
+test("palette déclinée automatiquement, contraste sur toutes les couleurs de base", () => {
+  for (const color of ["#eddd53","#dd668a","#186bd5","#111111","#eeeeee","#315f3a","#684887"]) {
+    for (const dark of [false,true]) {
+      const p=associationPalette(color,dark);
+      for (const key of ["--bg","--surface","--surface-2","--border","--green","--green-strong","--green-soft","--button-text"]) assert.match(p[key],/^#[a-f0-9]{6}$/i);
+      assert.ok(contrastRatio(p["--green"],p["--button-text"])>=4.5,color+" button "+dark);
+      assert.ok(contrastRatio(p["--green-strong"],p["--surface-2"])>=4.5,color+" link "+dark);
+    }
+  }
+  assert.notEqual(associationPalette("#df647a")["--bg"],associationPalette("#4473c4")["--bg"]);
+  assert.notEqual(associationPalette("#df647a")["--surface-2"],associationPalette("#4473c4")["--surface-2"]);
+  assert.equal(associationPalette("red")["--bg"],associationPalette("#315f3a")["--bg"]);
 });

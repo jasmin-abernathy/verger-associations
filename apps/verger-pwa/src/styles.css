@@ -9,6 +9,7 @@
   --green: #315f3a;
   --green-strong: #23492b;
   --green-soft: #dcebdc;
+  --button-text: #ffffff;
   --focus: #005fcc;
   --warning: #7a5100;
   --danger: #922d2d;
@@ -27,6 +28,7 @@
     --green: #8fc49a;
     --green-strong: #b5ddb9;
     --green-soft: #253d2a;
+    --button-text: #ffffff;
     --focus: #8cbcff;
     --warning: #ffd28a;
     --danger: #ffaaaa;
@@ -40,7 +42,7 @@ button, input, select, textarea { font: inherit; }
 button, input, select, textarea { min-height: 44px; border: 1px solid var(--border); border-radius: 0.6rem; }
 input, select, textarea { width: 100%; padding: 0.65rem 0.75rem; background: var(--surface); color: var(--text); }
 textarea { resize: vertical; }
-button { padding: 0.65rem 0.9rem; border-color: var(--green); background: var(--green); color: #fff; font-weight: 750; cursor: pointer; }
+button { padding: 0.65rem 0.9rem; border-color: var(--green); background: var(--green); color: var(--button-text); font-weight: 750; cursor: pointer; }
 button.secondary, .text-button { background: transparent; color: var(--green-strong); }
 button:hover { filter: brightness(0.94); }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
@@ -114,7 +116,7 @@ label { display: grid; gap: 0.35rem; color: var(--muted); font-weight: 650; }
 .toast[data-error="true"] { border-color: var(--danger); color: var(--danger); }
 
 html[data-accessible="true"] { font-size: 112.5%; scroll-behavior: auto; }
-html[data-accessible="true"] body { --bg: #fff; --surface: #fff; --surface-2: #f2f4f5; --text: #111820; --muted: #34424c; --border: #435b64; --green: #005a70; --green-strong: #123b46; --green-soft: #e8f3f5; --focus: #005fcc; font-family: Verdana, Tahoma, Arial, sans-serif; line-height: 1.78; }
+html[data-accessible="true"] body { --bg: #fff; --surface: #fff; --surface-2: #f2f4f5; --text: #111820; --muted: #34424c; --border: #435b64; --focus: #005fcc; font-family: Verdana, Tahoma, Arial, sans-serif; line-height: 1.78; }
 html[data-accessible="true"] a { text-decoration: underline; text-underline-offset: .2em; }
 html[data-accessible="true"] * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 

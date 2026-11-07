@@ -1,6 +1,7 @@
 import { readSimplexLink, saveSimplexLink } from "./simplex.js";
 import { DEFAULT_MODULES, MODULES, renderSetupWizard } from "./setup.js";
 import { renderRoleEntry, roleForAccount, ENTRY_ROLES } from "./role-entry.js";
+import { applyAssociationPalette } from "./theme-palette.js";
 import {
   addAction,
   addAgendaItem,
@@ -257,8 +258,8 @@ function render() {
   const icon = document.querySelector(".brand img");
   const logoDataUrl = state.organization?.logoDataUrl || "";
   if (icon) icon.src = /^data:image\/webp;base64,/.test(logoDataUrl) ? logoDataUrl : "./icon.svg";
-  const color = state.organization?.themeColor;
-  if (/^#[\da-fA-F]{6}$/.test(color || "")) document.documentElement.style.setProperty("--green", color);
+  const color = onboarding ? setup.themeColor : state.organization?.themeColor;
+  applyAssociationPalette(document.documentElement, color, window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ?? false);
   headerName.textContent = authorityState.publicMode ? "Résultats publics" : (state.organization?.name || "Mon association");
   if (!onboarding && !viewAllowed(currentView, state)) currentView = "dashboard";
   for (const panel of panels) {
@@ -1013,6 +1014,7 @@ installButton.addEventListener("click", async () => {
 window.addEventListener("appinstalled", () => { installButton.hidden = true; showToast("Verger Associations installé"); });
 window.addEventListener("online", updateConnectionState);
 window.addEventListener("offline", updateConnectionState);
+window.matchMedia?.("(prefers-color-scheme: dark)")?.addEventListener?.("change", render);
 
 handle.on("change", render);
 render();
