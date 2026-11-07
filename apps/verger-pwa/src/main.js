@@ -972,6 +972,10 @@ document.addEventListener("click", (event) => {
       showToast("Connectez-vous à votre association avant d'ouvrir la messagerie.",true);
       return;
     }
+    // Keep the authenticated home screen behind the native messenger.
+    // Android Back will reveal this existing WebView, not the initial role selector.
+    currentView="dashboard";
+    render();
     window.VergerNative.openChat(token,org.id,org.themeColor || "#315f3a");
     return;
   }
