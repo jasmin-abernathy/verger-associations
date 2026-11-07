@@ -373,10 +373,13 @@ function actionRow(action) {
 }
 
 function chat(_state, context) {
-  if (context.embeddedSimplex) return `${heading("Discussion", "Les échanges restent dans cette application.")}
-    <article class="card"><h2>Votre messagerie</h2><p>La messagerie chiffrée est limitée au groupe privé de votre association. Une première configuration du profil peut être nécessaire.</p>
-    <button type="button" data-action="open-embedded-chat">Ouvrir les discussions</button>
-    <p>Les responsables gèrent les invitations. Le groupe est associé localement à ce téléphone.</p></article>`;
+  if (context.embeddedSimplex) {
+    const presidence=context.authority?.account?.role==="administrator" && context.authority.account.organizationId===_state.organization?.id;
+    return `${heading("Discussion", "Les échanges restent dans cette application.")}
+      <article class="card"><h2>Votre messagerie</h2><p>${presidence ? "En tant que membre de la présidence, vous pouvez créer le groupe privé de l’association directement dans la messagerie, sans renseigner de lien d’invitation." : "Rejoignez le groupe privé avec l’invitation de votre association."} La première utilisation nécessite toujours un profil de messagerie chiffrée.</p>
+      <button type="button" data-action="open-embedded-chat">${presidence ? "Créer ou ouvrir le groupe" : "Ouvrir la messagerie"}</button>
+      <p class="muted">Les invitations sont gérées par les responsables. Chaque appareil rejoint son groupe de manière chiffrée.</p></article>`;
+  }
   const link = context.simplexLink || "";
   return `${heading("Discussion SimpleX", "Retrouver le groupe de votre association dans SimpleX.")}
     <article class="card"><h2>Échanger avec le groupe</h2>

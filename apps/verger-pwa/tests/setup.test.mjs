@@ -96,3 +96,13 @@ test("palette déclinée automatiquement, contraste sur toutes les couleurs de b
   assert.notEqual(associationPalette("#df647a")["--surface-2"],associationPalette("#4473c4")["--surface-2"]);
   assert.equal(associationPalette("red")["--bg"],associationPalette("#315f3a")["--bg"]);
 });
+
+test("messagerie : présidence invitée à créer le groupe sans code, bénévoles invités à le rejoindre", () => {
+  const state=createInitialState("ALDEBARAN");
+  const admin=renderView("chat",state,{embeddedSimplex:true,authority:{account:{role:"administrator",organizationId:state.organization.id}}});
+  const volunteer=renderView("chat",state,{embeddedSimplex:true,authority:{account:{role:"member",organizationId:state.organization.id}}});
+  assert.match(admin,/Créer ou ouvrir le groupe/);
+  assert.match(admin,/sans renseigner de lien d’invitation/);
+  assert.match(volunteer,/Ouvrir la messagerie/);
+  assert.doesNotMatch(volunteer,/Créer ou ouvrir le groupe/);
+});

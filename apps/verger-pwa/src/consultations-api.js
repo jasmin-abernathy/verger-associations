@@ -109,6 +109,7 @@ export function getPublicPollResults(id) {
 
 export function clearNativeSession() { nativeSessionToken = ""; }
 export function hasNativeSession() { return nativePlatform && Boolean(nativeSessionToken); }
+export function nativeChatSessionToken() { return nativePlatform ? nativeSessionToken : ""; }
 
 async function request(path, {
   method = "GET",

@@ -61,6 +61,7 @@ import {
   getPollResults,
   getPublicPollResults,
   getSession,
+  nativeChatSessionToken,
   listPolls,
   login as loginAccount,
   logout as logoutAccount,
@@ -963,7 +964,17 @@ document.addEventListener("click", (event) => {
     return;
   }
   if (action === "open-view" && viewAllowed(button.dataset.view)) { currentView = button.dataset.view; render(); return; }
-  if (action === "open-embedded-chat" && embeddedSimplex) { window.VergerNative.openChat(); return; }
+  if (action === "open-embedded-chat" && embeddedSimplex) {
+    const org=currentDoc()?.organization;
+    const account=authorityState.account;
+    const token=nativeChatSessionToken();
+    if (!account || !token || !org?.domainVerified || account.organizationId!==org.id) {
+      showToast("Connectez-vous à votre association avant d'ouvrir la messagerie.",true);
+      return;
+    }
+    window.VergerNative.openChat(token,org.id);
+    return;
+  }
   if (action === "copy-simplex-link") void copyText(readSimplexLink(localStorage, handle.url), "Lien SimpleX copié");
   if (action === "toggle-volunteer") toggleVolunteer(button);
   if (action === "remove-volunteer") updateParticipants("volunteer", button.dataset.id, button.dataset.memberId, false);
