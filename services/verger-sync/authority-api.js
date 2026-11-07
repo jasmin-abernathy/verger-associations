@@ -1,4 +1,5 @@
 import express from "express";
+import { startDomainVerification, completeDomainVerification } from "./organization-registration.js";
 import {
   acceptInvitation,
   accountFromSessionToken,
@@ -17,17 +18,38 @@ import {
   updatePollBeforeResponses,
 } from "./consultations-service.js";
 import { parseCookies } from "./authority-security.js";
+import { publicOrganization, requestAccess, listAccessRequests, decideAccessRequest } from "./access-requests.js";
 
 const COOKIE = "verger_session";
 
-export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins = [], nativeOrigins = [] }) {
+export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins = [], nativeOrigins = [], dnsResolver, fileReader }) {
   const mutationOrigins = [...new Set([...allowedOrigins, ...nativeOrigins])];
+  // Limitation par IP plutôt que par domaine : un tiers ne doit pas pouvoir
+  // saturer les défis d'une association et bloquer le propriétaire du DNS.
+  const domainChallengeRates = new Map();
+  function challengeRateLimited(request) {
+    const key = String(request.ip || request.socket?.remoteAddress || "");
+    const nowMs = Date.now();
+    const previous = domainChallengeRates.get(key);
+    const current = !previous || previous.until < nowMs ? { count: 0, until: nowMs + 3600000 } : previous;
+    current.count++;
+    domainChallengeRates.set(key, current);
+    if (domainChallengeRates.size > 10000) {
+      for (const [ip, entry] of domainChallengeRates) {
+        if (entry.until < nowMs) domainChallengeRates.delete(ip);
+      }
+    }
+    return current.count > 20;
+  }
+
 
   app.use("/api/v1", (request, response, next) => {
+    response.setHeader("Cache-Control", "no-store");
     const origin = normalizedOrigin(request.headers.origin);
-    if (origin && nativeOrigins.includes(origin)) {
+    if (origin && mutationOrigins.includes(origin)) {
       response.setHeader("Access-Control-Allow-Origin", origin);
-      response.setHeader("Vary", "Origin");
+      response.vary("Origin");
+      if (allowedOrigins.includes(origin)) response.setHeader("Access-Control-Allow-Credentials", "true");
       response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
       response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
       response.setHeader("Access-Control-Max-Age", "600");
@@ -44,6 +66,70 @@ export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins
     next();
   });
   app.use("/api/v1", express.json({ limit: "64kb" }));
+
+  app.post("/api/v1/organizations/verification/start", (request, response, next) => {
+    try {
+      if (challengeRateLimited(request)) {
+        response.status(429).json({ error: "too_many_challenges", message: "Trop de demandes depuis cette connexion. Réessayez plus tard." });
+        return;
+      }
+      const challenge = startDomainVerification(db, request.body?.domain);
+      response.status(201).json(challenge);
+    } catch (error) { next(error); }
+  });
+
+  // Public identity lookup never discloses accounts or an unverified organization.
+  app.get("/api/v1/organizations/by-domain/:domain", (request, response, next) => {
+    try { response.json({ organization: publicOrganization(db, request.params.domain) }); }
+    catch (error) { next(error); }
+  });
+  const requestLimits = new Map();
+  app.post("/api/v1/access-requests", (request, response, next) => {
+    try {
+      const ip = String(request.ip || request.socket?.remoteAddress || "");
+      const time = Date.now();
+      const last = requestLimits.get(ip);
+      const entry = !last || last.until < time ? { count: 0, until: time + 3600000 } : last;
+      if (++entry.count > 10) {
+        response.status(429).json({error:"rate_limited",message:"Trop de demandes depuis cet appareil"});
+        return;
+      }
+      requestLimits.set(ip, entry);
+      if(requestLimits.size>10000)for(const [key,value] of requestLimits)if(value.until < time)requestLimits.delete(key);
+      response.status(202).json(requestAccess(db, request.body || {}));
+    } catch (error) { next(error); }
+  });
+  app.get("/api/v1/access-requests", withSession(db), (request, response, next) => {
+    try { response.json({requests:listAccessRequests(db,request.account)}); }
+    catch (error) { next(error); }
+  });
+  app.post("/api/v1/access-requests/:id/approve", withSession(db), (request, response, next) => {
+    try { response.json(decideAccessRequest(db,request.account,request.params.id,true)); }
+    catch(error){next(error);}
+  });
+  app.post("/api/v1/access-requests/:id/reject", withSession(db), (request, response, next) => {
+    try { response.json(decideAccessRequest(db,request.account,request.params.id,false)); }
+    catch(error){next(error);}
+  });
+
+  // Only the server's DNS resolver can confirm domain control. The client
+  // never sets a "verified" flag by itself.
+  async function finishDomainRegistration(request, response, next, native) {
+    try {
+      const { account, organization, session } = await completeDomainVerification(db, request.body || {}, { dnsResolver, fileReader });
+      if (!native) setSessionCookie(response, session.token, session.expiresAt, cookieSecure);
+      response.status(201).json({
+        account, organization,
+        ...(native ? { sessionToken: session.token, expiresAt: session.expiresAt } : {}),
+      });
+    } catch (error) { next(error); }
+  }
+
+  app.post("/api/v1/organizations/verification/complete", (request, response, next) =>
+    void finishDomainRegistration(request, response, next, false));
+
+  app.post("/api/v1/native/organizations/verification/complete", requireNativeOrigin(nativeOrigins), (request, response, next) =>
+    void finishDomainRegistration(request, response, next, true));
 
   app.post("/api/v1/login", (request, response, next) => {
     try {
@@ -86,7 +172,8 @@ export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins
       const account = acceptInvitation(db, request.body || {});
       const session = createSession(db, account);
       setSessionCookie(response, session.token, session.expiresAt, cookieSecure);
-      response.status(201).json({ account });
+      const organization = db.prepare("SELECT id, name, domain FROM organizations WHERE id = ?").get(account.organizationId);
+      response.status(201).json({ account, organization });
     } catch (error) { next(error); }
   });
 
@@ -94,7 +181,8 @@ export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins
     try {
       const account = acceptInvitation(db, request.body || {});
       const session = createSession(db, account);
-      response.status(201).json({ account, sessionToken: session.token, expiresAt: session.expiresAt });
+      const organization = db.prepare("SELECT id, name, domain FROM organizations WHERE id = ?").get(account.organizationId);
+      response.status(201).json({ account, organization, sessionToken: session.token, expiresAt: session.expiresAt });
     } catch (error) { next(error); }
   });
 
@@ -147,7 +235,15 @@ export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins
     } catch (error) { next(error); }
   });
 
+  app.use("/api/v1", (_request, response) => {
+    response.status(404).json({ error: "route_not_found", message: "Service demandé introuvable" });
+  });
+
   app.use("/api/v1", (error, _request, response, _next) => {
+    if (error.type === "entity.parse.failed") {
+      response.status(400).json({ error: "invalid_json", message: "Requête JSON invalide" });
+      return;
+    }
     const status = Number(error?.status) || 500;
     if (status >= 500) console.error(error);
     response.status(status).json({

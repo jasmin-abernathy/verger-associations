@@ -1,16 +1,22 @@
 import { DECISION_METHODS, WELCOME_STEPS, activeRecords, counts } from "./domain.js";
 import { empty, escapeHtml as e, formatDate, heading, stat } from "./helpers.js";
 import { meetingCard } from "./meetings.js";
+import { renderIdeas, renderResources, renderAttendance, renderVolunteers } from "./community.js";
+import { MODULES, DEFAULT_MODULES } from "./setup.js";
 
 export function renderView(name, state, context) {
-  const renderers = { dashboard, members, welcome, meetings, decisions, actions, events, volunteers, help, consultations, more, settings };
+  const renderers = { dashboard, members, welcome, meetings, decisions, actions, events, volunteers, help, ideas: renderIdeas, resources: renderResources, consultations, chat, more, admin, settings };
+  if (["members", "welcome", "settings"].includes(name) && (context.authority?.account?.role !== "administrator" || context.authority.account.organizationId !== state.organization?.id)) {
+    return heading("Accès réservé", "Cette page est réservée aux responsables de l'association.");
+  }
   return renderers[name]?.(state, context) || "";
 }
 
-function dashboard(state) {
+function dashboard(state, context) {
   const c = counts(state);
   const nextActions = activeRecords(state.actions).filter((item) => !item.done).slice(0, 5);
   return `${heading("Accueil", "Une vue simple de ce qui demande de l’attention.")}
+    ${context.setupNeeded ? '<article class="card"><h2>Votre association n’est pas encore vérifiée</h2><p>Explorez en local ou configurez votre espace avec vérification DNS.</p><button type="button" data-action="setup-resume">Configurer mon association</button></article>' : ""}
     <div class="stats">${stat(c.members,"membres")}${stat(c.meetings,"réunions")}${stat(c.decisions,"décisions")}${stat(c.openActions,"actions ouvertes")}${stat(c.events,"événements")}${stat(c.volunteerNeeds,"besoins bénévoles")}</div>
     <div class="grid-2"><article class="card"><h2>À faire</h2>${nextActions.length ? `<ul class="clean-list">${nextActions.map(actionRow).join("")}</ul>` : empty("Aucune action ouverte.")}</article>
     <article class="card"><h2>Principe du Verger</h2><p>Les données sont enregistrées d’abord sur cet appareil. La connexion sert à synchroniser, pas à rendre l’application utilisable.</p><p class="muted">Aucun compte externe, aucune publicité, aucune télémétrie.</p></article></div>`;
@@ -56,13 +62,13 @@ function actions(state) {
 function events(state) {
   const list = activeRecords(state.events).reverse();
   const archived = archivedRecords(state.events);
-  return `${heading("Événements", "Dates et informations pratiques, sans calendrier externe obligatoire.")}<div class="grid-2"><article class="card"><h2>Événements</h2>${list.length ? `<div class="stack">${list.map((item) => `<article class="subcard"><form data-form="event-edit" data-id="${e(item.id)}" class="form"><label>Titre<input name="title" required maxlength="180" value="${e(item.title)}"></label><label>Date<input name="date" type="date" value="${e(item.date || "")}"></label><label>Lieu<input name="location" maxlength="240" value="${e(item.location || "")}"></label><div class="button-row"><button>Enregistrer</button><button type="button" class="secondary" data-action="archive-item" data-collection="events" data-id="${e(item.id)}" data-archived="true">Archiver</button></div></form></article>`).join("")}</div>` : empty("Aucun événement.")}${archivedList("Événements archivés", archived, "events", (item) => item.title)}</article><article class="card"><h2>Ajouter</h2><form data-form="event" class="form"><label>Titre<input name="title" required maxlength="180"></label><label>Date<input name="date" type="date"></label><label>Lieu<input name="location" maxlength="240"></label><button>Créer l’événement</button></form></article></div>`;
+  return `${heading("Événements", "Dates et informations pratiques, sans calendrier externe obligatoire.")}<div class="grid-2"><article class="card"><h2>Événements</h2>${list.length ? `<div class="stack">${list.map((item) => `<article class="subcard"><form data-form="event-edit" data-id="${e(item.id)}" class="form"><label>Titre<input name="title" required maxlength="180" value="${e(item.title)}"></label><label>Date<input name="date" type="date" value="${e(item.date || "")}"></label><label>Lieu<input name="location" maxlength="240" value="${e(item.location || "")}"></label><div class="button-row"><button>Enregistrer</button><button type="button" class="secondary" data-action="archive-item" data-collection="events" data-id="${e(item.id)}" data-archived="true">Archiver</button></div></form>${renderAttendance(state, item)}</article>`).join("")}</div>` : empty("Aucun événement.")}${archivedList("Événements archivés", archived, "events", (item) => item.title)}</article><article class="card"><h2>Ajouter</h2><form data-form="event" class="form"><label>Titre<input name="title" required maxlength="180"></label><label>Date<input name="date" type="date"></label><label>Lieu<input name="location" maxlength="240"></label><button>Créer l’événement</button></form></article></div>`;
 }
 
 function volunteers(state) {
   const needs = activeRecords(state.volunteerNeeds);
   const eventList = activeRecords(state.events);
-  return `${heading("Bénévolat", "Exprimer les besoins avant de construire une gestion complexe.")}<div class="grid-2"><article class="card">${needs.length ? `<ul class="clean-list">${needs.map((need) => `<li><strong>${e(need.title)}</strong><span>${need.slots} personne${need.slots > 1 ? "s" : ""} recherchée${need.slots > 1 ? "s" : ""}${need.closed ? " · clôturé" : ""}</span>${!need.closed ? `<button class="text-button" type="button" data-action="close-volunteer" data-id="${e(need.id)}">Clôturer</button>` : ""}</li>`).join("")}</ul>` : empty("Aucun besoin ouvert.")}</article><article class="card"><h2>Nouveau besoin</h2><form data-form="volunteer" class="form"><label>Besoin<input name="title" required maxlength="240"></label><label>Nombre de personnes<input name="slots" type="number" min="1" max="999" value="1"></label><label>Événement lié<select name="eventId"><option value="">Aucun</option>${eventList.map((item) => `<option value="${e(item.id)}">${e(item.title)}</option>`).join("")}</select></label><button>Ajouter</button></form></article></div>`;
+  return `${heading("Bénévolat", "Exprimer les besoins avant de construire une gestion complexe.")}<div class="grid-2"><article class="card">${needs.length ? `<ul class="clean-list">${needs.map((need) => `<li><strong>${e(need.title)}</strong><span>${need.slots} personne${need.slots > 1 ? "s" : ""} recherchée${need.slots > 1 ? "s" : ""}${need.closed ? " · clôturé" : ""}</span>${renderVolunteers(state, need)}<button class="text-button" type="button" data-action="toggle-volunteer" data-id="${e(need.id)}" data-closed="${!need.closed}">${need.closed ? "Rouvrir" : "Clôturer"}</button></li>`).join("")}</ul>` : empty("Aucun besoin ouvert.")}</article><article class="card"><h2>Nouveau besoin</h2><form data-form="volunteer" class="form"><label>Besoin<input name="title" required maxlength="240"></label><label>Nombre de personnes<input name="slots" type="number" min="1" max="999" value="1"></label><label>Événement lié<select name="eventId"><option value="">Aucun</option>${eventList.map((item) => `<option value="${e(item.id)}">${e(item.title)}</option>`).join("")}</select></label><button>Ajouter</button></form></article></div>`;
 }
 
 function help(state) {
@@ -275,16 +281,55 @@ function formatDateTime(value) {
   catch { return value; }
 }
 
-function more() {
-  return `${heading("Autres modules", "Le socle est prêt à accueillir les fonctions validées par le pilote.")}<div class="module-grid">${[
-    ["Signalements","Remontée et suivi d’un problème."],["Alertes","Qualification d’alertes externes."],["Jugement majoritaire","Urne Mieux Voter puis import du résultat agrégé."],
-  ].map(([title,text]) => `<article class="card"><span class="badge">À venir</span><h2>${title}</h2><p>${text}</p></article>`).join("")}</div>`;
+function more(state, context) {
+  const enabled = state.organization?.modules || DEFAULT_MODULES;
+  const available = MODULES.filter(([id]) => enabled.includes(id) && !["members","welcome"].includes(id));
+  const isAdmin = context.authority?.account?.role === "administrator" && context.authority.account.organizationId === state.organization?.id;
+  return `${heading("Tous les modules", "Naviguez sans faire défiler une longue barre horizontale.")}
+    <div class="module-grid">${available.map(([id,title]) => `<article class="card"><h2>${e(title)}</h2><button type="button" data-action="open-view" data-view="${e(id)}">Ouvrir</button></article>`).join("")}
+    <article class="card"><h2>${isAdmin ? "Administration" : "Espace responsable"}</h2><button type="button" data-action="open-view" data-view="admin">${isAdmin ? "Gérer l’association" : "Se connecter"}</button></article></div>`;
+}
+
+function admin(state, context) {
+  const account = context.authority?.account;
+  const isAdmin = account?.role === "administrator" && account.organizationId === state.organization?.id;
+  if (!isAdmin) {
+    return `${heading("Espace responsable", "Connectez-vous pour accéder aux réglages et à la gestion des membres.")}
+      <article class="card"><h2>Connexion</h2>
+        ${context.authority?.error ? `<p class="warning">${e(context.authority.error)}</p>` : ""}
+        ${account ? `<p>Compte connecté : ${e(account.email)} (${e(account.role)}). Vous ne disposez pas des droits d'administration de cet espace.</p><button type="button" data-action="account-logout">Changer de compte</button>` : `<form data-form="account-login" class="form">
+          <label>E-mail<input type="email" name="email" required autocomplete="username"></label>
+          <label>Mot de passe<input type="password" name="password" required autocomplete="current-password"></label>
+          <button>Se connecter</button></form>`}
+      </article>`;
+  }
+  const requests = context.authority?.accessRequests || [];
+  const approval = context.authority?.accessApproval;
+  return `${heading("Administration", "Les paramètres et la gestion des adhérents sont réservés aux responsables.")}
+    <div class="module-grid">
+      <article class="card"><h2>Membres</h2><p>Fiches et rôles des adhérents.</p><button type="button" data-action="open-view" data-view="members">Gérer les membres</button></article>
+      <article class="card"><h2>Accueil des nouveaux</h2><p>Suivre l’intégration des membres.</p><button type="button" data-action="open-view" data-view="welcome">Voir les suivis</button></article>
+      <article class="card"><h2>Paramètres</h2><p>Modules, couleurs, sauvegarde et serveur.</p><button type="button" data-action="open-view" data-view="settings">Ouvrir les réglages</button></article>
+    </div>
+    <article class="card"><h2>Demandes d’accès</h2>
+      <p class="muted">Seule la présidence peut les valider. L’adresse e-mail déclarée par la personne n’est pas vérifiée automatiquement.</p>
+      ${approval ? `<p role="status">Invitation pour <strong>${e(approval.email)}</strong> (${e(approval.role === "facilitator" ? "Bureau / fondateurs" : "Bénévoles")}) : <code>${e(approval.token)}</code></p><button type="button" data-action="copy-invitation-code" data-code="${e(approval.token)}">Copier le code à transmettre</button>` : ""}
+      ${requests.length ? `<div class="stack">${requests.map(req=>`<div class="subcard"><p><strong>${e(req.email)}</strong> — ${e(req.role === "facilitator" ? "Bureau / fondateurs" : "Bénévoles")}</p>${req.message ? `<p>${e(req.message)}</p>` : ""}<div class="button-row"><form data-form="access-approve"><input type="hidden" name="requestId" value="${e(req.id)}"><button>Approuver</button></form><form data-form="access-reject"><input type="hidden" name="requestId" value="${e(req.id)}"><button class="secondary">Refuser</button></form></div></div>`).join("")}</div>` : '<p>Aucune demande en attente.</p>'}
+    </article>
+    <p class="warning">Le serveur protège les comptes et consultations. Le document local-first reste un prototype : le partage par jeton Sync ne fournit pas encore des permissions complètes par membre.</p>`;
 }
 
 function settings(state, context) {
   return `${heading("Réglages", "L’application reste utilisable sans serveur. La synchro distante est facultative.")}
     <div class="grid-2">
       <article class="card"><h2>Association</h2><form data-form="organization" class="form"><label>Nom<input name="name" required maxlength="180" value="${e(state.organization.name || "")}"></label><label>Description<textarea name="description" maxlength="1000" rows="3">${e(state.organization.description || "")}</textarea></label><button>Enregistrer</button></form></article>
+      <article class="card"><h2>Personnalisation</h2><form data-form="modules" class="form">
+        <label>Couleur principale (nuances automatiques)<input name="themeColor" type="color" value="${e(state.organization.themeColor || "#315f3a")}"></label>
+        <label>Logo (PNG, JPEG ou WebP)<input name="logo" type="file" accept="image/png,image/jpeg,image/webp"></label>
+        ${state.organization.logoDataUrl ? `<label class="module-choice"><input name="removeLogo" type="checkbox">Retirer le logo actuel</label>` : ""}
+        <fieldset class="setup-modules"><legend>Modules activés</legend>${MODULES.map(([id,title]) => `<label class="module-choice"><input type="checkbox" name="module" value="${e(id)}" ${(state.organization.modules || DEFAULT_MODULES).includes(id) ? "checked" : ""}><span>${e(title)}</span></label>`).join("")}</fieldset>
+        <button>Enregistrer</button></form>
+        <p class="muted">Domaine : <strong>${e(state.organization.domain || "Non vérifié")}</strong></p></article>
       <article class="card"><h2>Sauvegarde et partage</h2><p>Le lien contient l’identifiant du document Automerge. Traite-le comme un lien privé.</p><p class="muted">Importer une sauvegarde ouvre un <strong>nouvel espace</strong> et ne remplace pas silencieusement le document courant. L’export JSON contient l’état métier, pas l’historique CRDT Automerge.</p><div class="button-row"><button type="button" data-action="copy-link">Copier le lien du document</button><button type="button" class="secondary" data-action="export">Exporter JSON</button><button type="button" class="secondary" data-action="import">Importer</button><input id="import-file" type="file" accept="application/json,.json" hidden></div></article>
       <article class="card"><h2>Serveur Verger</h2><form data-form="sync" class="form">
         <label>API comptes et consultations<input name="apiUrl" type="text" inputmode="url" autocapitalize="none" spellcheck="false" placeholder="https://verger.exemple.fr/api/v1" value="${e(context.apiUrl)}"></label>
@@ -325,4 +370,25 @@ function consultationCard(item) {
 
 function actionRow(action) {
   return `<li class="check-row"><input type="checkbox" ${action.done ? "checked" : ""} data-toggle-action="${e(action.id)}" aria-label="Marquer ${e(action.text)} comme terminée"><div><strong class="${action.done ? "done" : ""}">${e(action.text)}</strong><span>${action.owner ? `Responsable : ${e(action.owner)}` : "Sans responsable"}${action.due ? ` · ${formatDate(action.due)}` : ""}</span></div></li>`;
+}
+
+function chat(_state, context) {
+  if (context.embeddedSimplex) {
+    const presidence=context.authority?.account?.role==="administrator" && context.authority.account.organizationId===_state.organization?.id;
+    return `${heading("Discussion", "Les échanges restent dans cette application.")}
+      <article class="card"><h2>Votre messagerie</h2><p>${presidence ? "En tant que membre de la présidence, vous pouvez créer le groupe privé de l’association directement dans la messagerie, sans renseigner de lien d’invitation." : "Rejoignez le groupe privé avec l’invitation de votre association."} La première utilisation nécessite toujours un profil de messagerie chiffrée.</p>
+      <button type="button" data-action="open-embedded-chat">${presidence ? "Créer ou ouvrir le groupe" : "Ouvrir la messagerie"}</button>
+      <p class="muted">Les invitations sont gérées par les responsables. Chaque appareil rejoint son groupe de manière chiffrée.</p></article>`;
+  }
+  const link = context.simplexLink || "";
+  return `${heading("Discussion SimpleX", "Retrouver le groupe de votre association dans SimpleX.")}
+    <article class="card"><h2>Échanger avec le groupe</h2>
+      <p>Cette première passerelle ouvre SimpleX, où vous choisissez votre profil et confirmez la connexion. Les messages restent dans SimpleX ; ils ne sont pas intégrés à Verger à ce stade.</p>
+      ${link ? `<div class="button-row"><a class="button" href="${e(link)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Ouvrir l’invitation dans SimpleX</a><button type="button" class="secondary" data-action="copy-simplex-link">Copier le lien</button></div>` : '<p class="empty">Aucun groupe associé sur cet appareil. Demandez le lien d’invitation à une personne du groupe.</p>'}
+      <p>SimpleX doit être installé pour discuter. Si plusieurs versions sont installées, choisissez celle que vous utilisez pour cette association. Aucun message ni relevé n’est envoyé automatiquement.</p>
+    </article>
+    <article class="card"><h2>${link ? "Modifier le lien" : "Associer un groupe"}</h2>
+      <form data-form="simplex-settings" class="form"><label>Lien d’invitation SimpleX<input name="link" type="url" inputmode="url" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="16384" placeholder="https://simplex.chat/…" value="${e(link)}" aria-describedby="simplex-storage"></label>
+      <p id="simplex-storage" class="muted">Conservé uniquement sur cet appareil, pour cet espace Verger. Ce lien privé n’est ni synchronisé ni inclus dans les exports. Videz le champ puis enregistrez pour le retirer ; cela ne quitte pas le groupe SimpleX.</p><button>Enregistrer le lien</button></form>
+    </article>`;
 }

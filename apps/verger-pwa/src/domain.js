@@ -31,6 +31,8 @@ export function createInitialState(name = "Mon association") {
     events: {},
     volunteerNeeds: {},
     helpPosts: {},
+    ideas: {},
+    resources: {},
     consultations: {},
     alerts: {},
     metadata: {
@@ -46,7 +48,7 @@ export function ensureState(doc) {
   if (!doc.organization) {
     doc.organization = { id: newId("org"), name: "Mon association", description: "", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
   }
-  for (const key of ["members", "meetings", "actions", "events", "volunteerNeeds", "helpPosts", "consultations", "alerts"]) {
+  for (const key of ["members", "meetings", "actions", "events", "volunteerNeeds", "helpPosts", "ideas", "resources", "consultations", "alerts"]) {
     if (!doc[key] || typeof doc[key] !== "object") doc[key] = {};
   }
   if (!doc.metadata) doc.metadata = { createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
@@ -143,7 +145,7 @@ export function updateMember(doc, memberId, { name, role = "Membre", contact = "
 }
 
 export function setArchived(doc, collection, id, archived) {
-  const allowed = ["members", "meetings", "actions", "events", "volunteerNeeds", "helpPosts", "consultations"];
+  const allowed = ["members", "meetings", "actions", "events", "volunteerNeeds", "helpPosts", "ideas", "resources", "consultations"];
   if (!allowed.includes(collection)) throw new Error("Collection non archivable");
   const item = doc[collection]?.[id];
   if (!item) throw new Error("Élément introuvable");

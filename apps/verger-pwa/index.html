@@ -32,17 +32,21 @@
   <div class="app-shell">
     <nav class="sidebar" aria-label="Sections de Verger Associations">
       <button data-view="dashboard" class="nav-item is-active" type="button">Accueil</button>
-      <button data-view="members" class="nav-item" type="button">Membres</button>
-      <button data-view="welcome" class="nav-item" type="button">Accueil</button>
+      <button data-view="members" class="nav-item" type="button" hidden>Membres</button>
+      <button data-view="welcome" class="nav-item" type="button" hidden>Accueil des nouveaux</button>
       <button data-view="meetings" class="nav-item" type="button">Réunions</button>
       <button data-view="decisions" class="nav-item" type="button">Décisions</button>
       <button data-view="actions" class="nav-item" type="button">Actions</button>
       <button data-view="events" class="nav-item" type="button">Événements</button>
       <button data-view="volunteers" class="nav-item" type="button">Bénévolat</button>
       <button data-view="help" class="nav-item" type="button">Entraide</button>
+      <button data-view="ideas" class="nav-item" type="button">Boîte à idées</button>
+      <button data-view="resources" class="nav-item" type="button">Ressources</button>
       <button data-view="consultations" class="nav-item" type="button">Consultations</button>
-      <button data-view="more" class="nav-item" type="button">Autres modules</button>
-      <button data-view="settings" class="nav-item" type="button">Réglages</button>
+      <button data-view="chat" class="nav-item" type="button">Messagerie</button>
+      <button data-view="more" class="nav-item" type="button">Plus</button>
+      <button data-view="admin" class="nav-item" type="button" hidden>Administration</button>
+      <button data-view="settings" class="nav-item" type="button" hidden>Réglages</button>
     </nav>
 
     <main id="content" tabindex="-1">
@@ -55,8 +59,12 @@
       <section data-panel="events" class="view-panel" hidden></section>
       <section data-panel="volunteers" class="view-panel" hidden></section>
       <section data-panel="help" class="view-panel" hidden></section>
+      <section data-panel="ideas" class="view-panel" hidden></section>
+      <section data-panel="resources" class="view-panel" hidden></section>
       <section data-panel="consultations" class="view-panel" hidden></section>
+      <section data-panel="chat" class="view-panel" hidden></section>
       <section data-panel="more" class="view-panel" hidden></section>
+      <section data-panel="admin" class="view-panel" hidden></section>
       <section data-panel="settings" class="view-panel" hidden></section>
     </main>
   </div>

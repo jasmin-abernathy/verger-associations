@@ -143,3 +143,34 @@ Authorization: Bearer <session>
 La PWA web continue d’utiliser son cookie `HttpOnly`.
 
 Voir `../../docs/SERVER-ANDROID.md`.
+
+## Validation HTTP
+
+`npm ci && npm run check` exécute aussi un scénario HTTP sur port local éphémère
+avec SQLite en mémoire : sessions web/natives, invitation à usage unique, isolation
+des associations, réponse modifiable, clôture créateur, agrégats et déconnexion.
+Les réponses privées portent `Cache-Control: no-store`. Les origines Web configurées
+reçoivent les en-têtes CORS avec credentials ; les cookies restent SameSite=Lax :
+préférer une origine commune, un site tiers pouvant bloquer les cookies.
+
+## Pilote isolé o2switch — ALDEBARAN
+
+Le pilote `app.js` publie uniquement l'API de vérification et les consultations. Il **ne lance pas** le service WebSocket Automerge ni le jeton Sync partagé. L'hébergement Node.js se fait via CloudLinux Passenger, sur une URI dédiée d'un domaine existant (par exemple `https://app.lepotager.org/verger-api/`). Le chemin public est toujours `.../verger-api/api/v1`. La racine de l'application et le fichier SQLite doivent rester **hors de public_html**.
+
+Variables d'environnement obligatoires :
+
+```text
+NODE_ENV=production
+VERGER_AUTH_DB=/home/<compte>/private/verger-associations-pilot/authority.sqlite
+VERGER_REGISTRATION_DOMAINS=asso-aldebaran.fr
+VERGER_ALLOWED_ORIGINS=https://app.lepotager.org
+VERGER_NATIVE_ORIGINS=https://appassets.androidplatform.net
+```
+
+Le serveur refuse de démarrer sans base SQLite privée et sans liste explicite des domaines pilotes. Il rejette l'inscription de tout autre domaine. Les comptes ne sont créés qu'après preuve DNS TXT ou fichier HTTPS, code temporaire valide et saisie du mot de passe du premier responsable. Tester `GET /health`, `POST /api/v1/organizations/verification/start`, les CORS et la non-inscription des domaines non autorisés sur l'URL **publique** avant de donner accès à l'APK.
+
+Pour l'APK Verger avec SimpleX intégré, le serveur peut être saisi à l'étape « Responsable » (`https://app.lepotager.org/verger-api`, sans `/api/v1` : l'application ajoute le suffixe). Les origines natives différentes de l'APK Capacitor classique ne doivent pas être confondues. La synchronisation multi-appareil n'est **pas activée** par ce pilote. Ne pas présenter cette API comme un service multi-associations prêt pour la production.
+
+### Contrôles d'hébergement pour le pilote
+
+Le répertoire de la base et ses fichiers sont privés (permissions répertoire `0700`, base SQLite et journaux `0600` ; umask du processus Node `0077`). Sur o2switch/LiteSpeed, installer dans le `.htaccess` de la **seule URI Passenger `/verger-api`** une redirection permanente `308` vers `https://app.lepotager.org`, sans changer le `.htaccess` parent ni les directives Passenger. Tester un GET non mis en cache et un POST en HTTP : tous deux doivent répondre `308`. Le GET `/verger-api/health` en HTTPS doit répondre `200`. Attention au cache LiteSpeed : un ancien GET `/health` peut être renvoyé avant expiration, raison pour laquelle le test utilise une URL avec paramètre unique.

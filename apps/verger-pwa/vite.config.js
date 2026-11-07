@@ -18,6 +18,7 @@ export default defineConfig({
   }],
   base: "./",
   server: {
+    allowedHosts: ["terminal.local"],
     proxy: {
       "/api": "http://localhost:3030",
     },

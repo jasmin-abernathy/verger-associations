@@ -1,3 +1,7 @@
+import { readSimplexLink, saveSimplexLink } from "./simplex.js";
+import { DEFAULT_MODULES, MODULES, renderSetupWizard } from "./setup.js";
+import { renderRoleEntry, roleForAccount, ENTRY_ROLES } from "./role-entry.js";
+import { applyAssociationPalette } from "./theme-palette.js";
 import {
   addAction,
   addAgendaItem,
@@ -19,6 +23,7 @@ import {
   updateMember,
 } from "./domain.js";
 import { slug } from "./helpers.js";
+import { addIdea, updateIdea, addResource, updateResource, setEventParticipant, setVolunteerParticipant, setVolunteerClosed, exportEventIcs } from "./community.js";
 import { exportMeetingMarkdown, importAnyJson } from "./portability.js";
 import {
   STORAGE_KEYS,
@@ -35,10 +40,18 @@ import {
   getApiBaseUrl,
   getPublicWebUrl,
   nativePlatform,
+  embeddedSimplex,
   platformName,
   saveServerSettings,
 } from "./platform.js";
 import {
+  beginDomainVerification,
+  organizationByDomain,
+  requestAssociationAccess,
+  listAssociationAccessRequests,
+  approveAssociationAccessRequest,
+  rejectAssociationAccessRequest,
+  completeDomainRegistration,
   acceptInvitation as acceptAccountInvitation,
   cancelPoll as cancelAuthorityPoll,
   closePoll as closeAuthorityPoll,
@@ -48,6 +61,7 @@ import {
   getPollResults,
   getPublicPollResults,
   getSession,
+  nativeChatSessionToken,
   listPolls,
   login as loginAccount,
   logout as logoutAccount,
@@ -65,6 +79,22 @@ const toast = document.getElementById("toast");
 const query = new URLSearchParams(location.search);
 const publicPollId = query.get("publicPoll") || "";
 let currentView = publicPollId ? "consultations" : "dashboard";
+const initialAssociation = currentDoc()?.organization || {};
+const setup = {
+  active: !publicPollId && initialAssociation.setupCompleted !== true,
+  step: 0,
+  name: initialAssociation.name === "Mon association" ? "" : (initialAssociation.name || ""),
+  description: initialAssociation.description || "",
+  domain: initialAssociation.domain || "",
+  email: "",
+  password: "",
+  themeColor: initialAssociation.themeColor || "#315f3a",
+  modules: initialAssociation.modules || [...DEFAULT_MODULES],
+  challenge: null,
+  method: "dns",
+  logoDataUrl: /^data:image\/webp;base64,/.test(initialAssociation.logoDataUrl || "") ? initialAssociation.logoDataUrl : "",
+};
+const entry = {view:"choices",role:"volunteer",domain:initialAssociation.domain || "",email:"",requestDone:false};
 let installPrompt = null;
 let toastTimer = null;
 let authorityState = {
@@ -75,6 +105,8 @@ let authorityState = {
   results: null,
   error: "",
   invitationCode: "",
+  accessRequests: [],
+  accessApproval: null,
   inviteToken: "",
   publicMode: Boolean(publicPollId),
   publicResults: null,
@@ -83,6 +115,103 @@ if (publicPollId) document.documentElement.dataset.publicPoll = "true";
 document.documentElement.dataset.native = String(nativePlatform);
 document.documentElement.dataset.platform = platformName;
 if (nativePlatform) installButton.hidden = true;
+
+async function prepareLogo(file) {
+  if (!file) return "";
+  if (!["image/png", "image/jpeg", "image/webp"].includes(file.type) || file.size > 8 * 1024 * 1024) {
+    throw new Error("Utilisez un logo PNG, JPEG ou WebP de 8 Mo maximum");
+  }
+  const url = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    image.src = url;
+    await image.decode();
+    const side = 512;
+    const scale = Math.min(1, side / Math.max(image.naturalWidth, image.naturalHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Conversion du logo indisponible sur cet appareil");
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const output = canvas.toDataURL("image/webp", .8);
+    if (!output.startsWith("data:image/webp;base64,") || output.length > 320_000) {
+      throw new Error("Logo trop volumineux après optimisation");
+    }
+    return output;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+async function handleSetupForm(form, type, values) {
+  try {
+    if (currentDoc()?.organization?.domainVerified) {
+      throw new Error("Cet appareil est déjà lié à une association. Connectez-vous plutôt que de recréer un espace.");
+    }
+    if (type === "setup-identity") {
+      setup.name = String(values.name || "").trim();
+      if (!setup.name) throw new Error("Indiquez le nom de votre association");
+      setup.description = String(values.description || "").trim();
+      setup.step = 1;
+    }
+    if (type === "setup-features") {
+      setup.themeColor = String(values.themeColor || "#315f3a");
+      const upload = form.querySelector('input[name="logo"]')?.files?.[0];
+      if (upload) setup.logoDataUrl = await prepareLogo(upload);
+      setup.modules = new FormData(form).getAll("module").filter(m => MODULES.some(([id]) => id === m));
+      setup.step = 2;
+    }
+    if (type === "setup-owner") {
+      setup.domain = String(values.domain || "").trim();
+      setup.email = String(values.email || "").trim();
+      setup.password = String(values.password || "");
+      const serverUrl = String(values.apiUrl || "").trim();
+      if (serverUrl) {
+        const u = new URL(serverUrl);
+        if (u.protocol !== "https:" && !["localhost", "127.0.0.1"].includes(u.hostname)) {
+          throw new Error("La vérification du domaine nécessite un serveur HTTPS");
+        }
+        saveServerSettings({ apiUrl: serverUrl });
+      }
+      if (!getApiBaseUrl()) throw new Error("Serveur Verger non configuré : vérification DNS impossible");
+      setup.challenge = await beginDomainVerification(setup.domain);
+      setup.step = 3;
+      showToast("Code de vérification créé");
+    }
+    if (type === "setup-verify") {
+      if (!setup.challenge) throw new Error("Demandez à nouveau un code de vérification");
+      const data = await completeDomainRegistration({
+        challengeId: setup.challenge.challengeId, dnsValue: setup.challenge.dnsValue, method: setup.method,
+        name: setup.name, description: setup.description, domain: setup.challenge.domain,
+        email: setup.email, password: setup.password, themeColor: setup.themeColor, modules: setup.modules,
+      });
+      changeDoc(doc => {
+        doc.organization.id = data.organization.id;
+        doc.organization.name = data.organization.name;
+        doc.organization.description = data.organization.description;
+        doc.organization.domain = data.organization.domain;
+        doc.organization.domainVerified = true;
+        doc.organization.setupCompleted = true;
+        doc.organization.themeColor = data.organization.themeColor;
+        if (setup.logoDataUrl) doc.organization.logoDataUrl = setup.logoDataUrl;
+        doc.organization.modules = [...data.organization.modules];
+      });
+      setup.password = "";
+      setup.challenge = null;
+      setup.active = false;
+      entry.view = "inside";
+      authorityState.account = data.account;
+      currentView = "dashboard";
+      showToast("Association créée et domaine vérifié ✓");
+      void loadAuthority();
+    }
+    render();
+  } catch (error) {
+    showToast(error?.message || "Configuration impossible", true);
+    render();
+  }
+}
 
 function showToast(message, isError = false) {
   clearTimeout(toastTimer);
@@ -101,20 +230,50 @@ function context() {
     docUrl: handle.url,
     nativePlatform,
     platformName,
+    embeddedSimplex,
     authority: authorityState,
+    simplexLink: readSimplexLink(localStorage, handle.url),
+    setupNeeded: currentDoc()?.organization?.setupCompleted !== true,
   };
+}
+
+function isAdministrator() {
+  return authorityState.account?.role === "administrator" &&
+    authorityState.account.organizationId === currentDoc()?.organization?.id;
+}
+
+function viewAllowed(view, state = currentDoc()) {
+  if (view === "admin") return true;
+  if (["members", "welcome", "settings"].includes(view)) return isAdministrator();
+  if (["dashboard", "more"].includes(view)) return true;
+  return (state?.organization?.modules || DEFAULT_MODULES).includes(view);
 }
 
 function render() {
   const state = currentDoc();
   if (!state) return;
+  const entryVisible = !authorityState.publicMode && !authorityState.account && entry.view !== "inside" && entry.view !== "create";
+  const onboarding = !entryVisible && setup.active && !authorityState.publicMode;
+  document.documentElement.dataset.entry = String(entryVisible);
+  document.documentElement.dataset.setup = String(onboarding);
+  const icon = document.querySelector(".brand img");
+  const logoDataUrl = state.organization?.logoDataUrl || "";
+  if (icon) icon.src = /^data:image\/webp;base64,/.test(logoDataUrl) ? logoDataUrl : "./icon.svg";
+  const color = onboarding ? setup.themeColor : state.organization?.themeColor;
+  applyAssociationPalette(document.documentElement, color, window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ?? false);
   headerName.textContent = authorityState.publicMode ? "Résultats publics" : (state.organization?.name || "Mon association");
+  if (!onboarding && !viewAllowed(currentView, state)) currentView = "dashboard";
   for (const panel of panels) {
-    const active = panel.dataset.panel === currentView;
+    const active = panel.dataset.panel === (entryVisible || onboarding ? "dashboard" : currentView);
     panel.hidden = !active;
-    if (active) panel.innerHTML = renderView(currentView, state, context());
+    if (active) panel.innerHTML = entryVisible
+      ? renderRoleEntry(entry,{apiUrl:getApiBaseUrl(),error:authorityState.error,loading:authorityState.loading})
+      : onboarding ? renderSetupWizard(setup, getApiBaseUrl()) : renderView(currentView, state, context());
   }
-  for (const item of navItems) item.classList.toggle("is-active", item.dataset.view === currentView);
+  for (const item of navItems) {
+    item.hidden = entryVisible || onboarding || ["members", "welcome", "settings"].includes(item.dataset.view) || !viewAllowed(item.dataset.view, state);
+    item.classList.toggle("is-active", item.dataset.view === currentView);
+  }
   updateConnectionState();
 }
 
@@ -143,11 +302,28 @@ function mutate(action, successMessage) {
 async function handleForm(form) {
   const type = form.dataset.form;
   const values = formValues(form);
+  if (type.startsWith("setup-")) {
+    await handleSetupForm(form, type, values);
+    return;
+  }
+  if (["member", "member-edit", "organization", "sync", "modules", "account-invite"].includes(type) && !isAdministrator()) {
+    showToast("Fonction réservée aux administrateurs", true);
+    return;
+  }
   const meetingId = form.dataset.meetingId || values.meetingId || "";
   const proposalId = form.dataset.proposalId || values.proposalId || "";
 
-  if (["account-login","account-accept-invite","account-invite","poll-create","poll-edit","poll-response","poll-cancel"].includes(type)) {
+  if (["entry-login","entry-request","entry-accept","access-approve","access-reject","account-login","account-accept-invite","account-invite","poll-create","poll-edit","poll-response","poll-cancel"].includes(type)) {
     await handleAuthorityForm(form, type, values);
+    return;
+  }
+
+  if (type === "simplex-settings") {
+    try {
+      saveSimplexLink(localStorage, handle.url, values.link);
+      showToast(values.link.trim() ? "Lien SimpleX enregistré sur cet appareil" : "Lien SimpleX retiré");
+      render();
+    } catch (error) { showToast(error.message, true); }
     return;
   }
 
@@ -194,12 +370,41 @@ async function handleForm(form) {
     case "help-edit":
       mutate((doc) => updateHelpPost(doc, form.dataset.id, values), "Annonce mise à jour");
       break;
+    case "idea":
+      mutate((doc) => addIdea(doc, values), "Idée ajoutée");
+      break;
+    case "idea-edit":
+      mutate((doc) => updateIdea(doc, form.dataset.id, values), "Idée mise à jour");
+      break;
+    case "resource":
+      mutate((doc) => addResource(doc, values), "Ressource ajoutée");
+      break;
+    case "resource-edit":
+      mutate((doc) => updateResource(doc, form.dataset.id, values), "Ressource mise à jour");
+      break;
     case "organization":
       mutate((doc) => {
         doc.organization.name = String(values.name || "").trim().slice(0, 180) || "Mon association";
         doc.organization.description = String(values.description || "").trim().slice(0, 1000);
       }, "Association mise à jour");
       break;
+    case "modules": {
+      let logoDataUrl = "";
+      try {
+        const file = form.querySelector('input[name="logo"]')?.files?.[0];
+        if (file) logoDataUrl = await prepareLogo(file);
+      } catch (error) {
+        showToast(error.message, true);
+        return;
+      }
+      mutate((doc) => {
+        doc.organization.modules = new FormData(form).getAll("module").filter(m => MODULES.some(([id]) => id === m));
+        doc.organization.themeColor = /^#[\da-fA-F]{6}$/.test(values.themeColor || "") ? values.themeColor : "#315f3a";
+        if (values.removeLogo) delete doc.organization.logoDataUrl;
+        else if (logoDataUrl) doc.organization.logoDataUrl = logoDataUrl;
+      }, "Personnalisation enregistrée");
+      break;
+    }
     case "sync":
       saveServerSettings({ apiUrl: values.apiUrl, publicWebUrl: values.publicWebUrl });
       saveSyncSettings(values.url, values.token);
@@ -235,16 +440,30 @@ function toggleAction(input) {
   }, "Action mise à jour");
 }
 
-function closeVolunteer(id) {
+function toggleVolunteer(button) {
+  mutate((doc) => setVolunteerClosed(doc, button.dataset.id, button.dataset.closed === "true"), "Besoin mis à jour");
+}
+
+function updateParticipants(kind, id, memberId, attending) {
+  if (!memberId) return;
   mutate((doc) => {
-    const need = doc.volunteerNeeds?.[id];
-    if (!need) throw new Error("Besoin bénévole introuvable");
-    need.closed = true;
-    need.updatedAt = new Date().toISOString();
-  }, "Besoin bénévole clôturé");
+    if (kind === "event") setEventParticipant(doc, id, memberId, attending);
+    else setVolunteerParticipant(doc, id, memberId, attending);
+  }, attending ? "Membre inscrit" : "Inscription retirée");
+  render();
+}
+
+function exportCalendarEvent(id) {
+  try {
+    const event = currentDoc().events?.[id];
+    if (!event) throw new Error("Événement introuvable");
+    const ics = exportEventIcs(event);
+    saveDownloadedText(slug(event.title) + ".ics", "text/calendar", ics);
+  } catch (error) { showToast(error?.message || "Export impossible", true); }
 }
 
 function toggleWelcome(input) {
+  if (!isAdministrator()) return;
   mutate((doc) => setWelcomeStep(doc, input.dataset.memberId, input.dataset.welcomeStep, input.checked), "Accueil mis à jour");
 }
 
@@ -253,6 +472,7 @@ function toggleHelp(button) {
 }
 
 function archiveItem(button) {
+  if (button.dataset.collection === "members" && !isAdministrator()) return;
   mutate(
     (doc) => setArchived(doc, button.dataset.collection, button.dataset.id, button.dataset.archived === "true"),
     button.dataset.archived === "true" ? "Élément archivé" : "Élément restauré",
@@ -272,10 +492,16 @@ async function loadAuthority() {
     const session = await getSession();
     authorityState.account = session.account || null;
     if (authorityState.account) {
+      entry.view = "inside";
+      if (authorityState.account.role === "administrator") {
+        const requests = await listAssociationAccessRequests();
+        authorityState.accessRequests = requests.requests || [];
+      }
       const data = await listPolls();
       authorityState.polls = data.polls || [];
     } else {
       authorityState.polls = [];
+      authorityState.accessRequests = [];
       authorityState.selectedPoll = null;
       authorityState.results = null;
     }
@@ -291,6 +517,10 @@ async function refreshAuthorityPolls() {
   if (!authorityState.account) return;
   const data = await listPolls();
   authorityState.polls = data.polls || [];
+  if (authorityState.account.role === "administrator") {
+    const access = await listAssociationAccessRequests();
+    authorityState.accessRequests = access.requests || [];
+  }
 }
 
 async function openAuthorityPoll(id) {
@@ -316,6 +546,75 @@ async function openAuthorityPoll(id) {
 async function handleAuthorityForm(form, type, values) {
   try {
     authorityState.error = "";
+    if (type === "entry-request") {
+      entry.domain = String(values.domain || "").trim();
+      entry.email = String(values.email || "").trim();
+      await requestAssociationAccess({domain:entry.domain,email:entry.email,role:entry.role==="founders"?"facilitator":"member",message:values.message});
+      entry.requestDone = true;
+      render();
+      return;
+    }
+    if (type === "entry-login") {
+      entry.domain = String(values.domain || "").trim();
+      entry.email = String(values.email || "").trim();
+      const orgResult = await organizationByDomain(entry.domain);
+      const org = orgResult.organization;
+      const data = await loginAccount({organizationId:org.id,email:entry.email,password:values.password});
+      if (roleForAccount(data.account) !== entry.role) {
+        await logoutAccount();
+        throw new Error("Ce compte appartient à un autre type d’accès. Choisissez la rubrique correspondant à vos droits.");
+      }
+      const existing = currentDoc()?.organization;
+      if (existing?.domainVerified && existing.id !== org.id) {
+        await logoutAccount();
+        throw new Error("Cet appareil est lié à une autre association ; il faut d’abord isoler ses données.");
+      }
+      changeDoc(doc=>{
+        doc.organization.id=org.id;
+        doc.organization.name=org.name;
+        doc.organization.domain=org.domain;
+        doc.organization.domainVerified=true;
+        doc.organization.setupCompleted=true;
+      });
+      setup.active=false;
+      entry.view="inside";
+      authorityState.account=data.account;
+      await refreshAuthorityPolls();
+      showToast("Compte connecté. Synchronisation des données entre appareils encore indisponible dans ce pilote.");
+      render();
+      return;
+    }
+    if (type === "entry-accept") {
+      const data = await acceptAccountInvitation({token:values.token,password:values.password});
+      if (roleForAccount(data.account) !== entry.role) {
+        await logoutAccount();
+        throw new Error("Le code correspond à un autre type d’accès : sélectionnez le bon espace.");
+      }
+      const org=data.organization;
+      if (!org || org.id !== data.account.organizationId || !org.domain) {
+        await logoutAccount();
+        throw new Error("Association de l’invitation introuvable");
+      }
+      const existing=currentDoc()?.organization;
+      if (existing?.domainVerified && existing.id !== org.id) {
+        await logoutAccount();
+        throw new Error("Cet appareil est lié à une autre association. Impossible de réutiliser ses données locales.");
+      }
+      changeDoc(doc=>{
+        doc.organization.id=org.id;
+        doc.organization.name=org.name;
+        doc.organization.domain=org.domain;
+        doc.organization.domainVerified=true;
+        doc.organization.setupCompleted=true;
+      });
+      authorityState.account=data.account;
+      entry.view="inside";
+      setup.active=false;
+      await refreshAuthorityPolls();
+      showToast("Compte activé. Les données partagées ne sont pas encore synchronisées sur ce téléphone.");
+      render();
+      return;
+    }
     if (type === "account-login") {
       const data = await loginAccount({
         organizationId: currentDoc().organization.id,
@@ -336,6 +635,22 @@ async function handleAuthorityForm(form, type, values) {
       showToast("Compte créé et connecté");
     }
 
+    if (type === "access-approve") {
+      const data = await approveAssociationAccessRequest(values.requestId);
+      authorityState.accessApproval = {email:data.email,token:data.invitation.token,role:data.role};
+      await refreshAuthorityPolls();
+      showToast("Demande approuvée : communiquez le code à la personne concernée.");
+      render();
+      return;
+    }
+    if (type === "access-reject") {
+      await rejectAssociationAccessRequest(values.requestId);
+      authorityState.accessApproval = null;
+      await refreshAuthorityPolls();
+      showToast("Demande refusée");
+      render();
+      return;
+    }
     if (type === "account-invite") {
       const data = await createAccountInvitation({
         email: values.email,
@@ -439,6 +754,9 @@ async function logOutAuthority() {
   authorityState.selectedPoll = null;
   authorityState.results = null;
   authorityState.invitationCode = "";
+  authorityState.accessRequests = [];
+  authorityState.accessApproval = null;
+  entry.view = "choices";
   showToast("Déconnecté");
   render();
 }
@@ -513,21 +831,27 @@ function renumberPollOptions(list) {
   });
 }
 
+function saveDownloadedText(filename, type, text) {
+  if (typeof window.VergerNative?.saveText === "function") {
+    window.VergerNative.saveText(filename, type, text);
+    return;
+  }
+  const url = URL.createObjectURL(new Blob([text], { type: type + ";charset=utf-8" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast("Fichier exporté");
+}
 function downloadMeetingMarkdown(meetingId) {
   try {
     const state = currentDoc();
     const meeting = state.meetings?.[meetingId];
     const text = exportMeetingMarkdown(state, meetingId);
-    const file = new Blob([text], { type: "text/markdown;charset=utf-8" });
-    const url = URL.createObjectURL(file);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${slug(meeting?.title || "reunion")}.md`;
-    document.body.append(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    showToast("Relevé Markdown exporté");
+    saveDownloadedText(`${slug(meeting?.title || "reunion")}.md`, "text/markdown", text);
   } catch (error) {
     showToast(error?.message || "Export impossible", true);
   }
@@ -535,18 +859,8 @@ function downloadMeetingMarkdown(meetingId) {
 
 function downloadExport() {
   const text = exportPortableJson(currentDoc());
-  const file = new Blob([text], { type: "application/json;charset=utf-8" });
-  const url = URL.createObjectURL(file);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${slug(currentDoc()?.organization?.name || "verger-associations")}.verger.json`;
-  document.body.append(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-  showToast("Sauvegarde JSON exportée");
+  saveDownloadedText(`${slug(currentDoc()?.organization?.name || "verger-associations")}.verger.json`, "application/json", text);
 }
-
 async function importExport(file) {
   try {
     const data = importAnyJson(await file.text());
@@ -576,6 +890,7 @@ function setAccessible(enabled) {
 
 for (const item of navItems) {
   item.addEventListener("click", () => {
+    if (setup.active || !viewAllowed(item.dataset.view)) return;
     currentView = item.dataset.view;
     render();
     document.getElementById("content")?.focus({ preventScroll: true });
@@ -594,13 +909,81 @@ document.addEventListener("change", (event) => {
   if (target.matches?.("[data-toggle-agenda]")) toggleAgenda(target);
   if (target.matches?.("[data-toggle-action]")) toggleAction(target);
   if (target.matches?.("[data-welcome-step]")) toggleWelcome(target);
+  if (target.matches?.("[data-assignment-kind]") && target.value) updateParticipants(target.dataset.assignmentKind, target.dataset.assignmentId, target.value, true);
 });
 
 document.addEventListener("click", (event) => {
+  const external = event.target.closest?.('a[target="_blank"][href]');
+  if (external && typeof window.VergerNative?.openExternal === "function") {
+    event.preventDefault();
+    window.VergerNative.openExternal(external.href);
+    return;
+  }
   const button = event.target.closest?.("[data-action]");
   if (!button) return;
   const action = button.dataset.action;
-  if (action === "close-volunteer") closeVolunteer(button.dataset.id);
+  if (action === "entry-home") { entry.view="choices"; authorityState.error=""; entry.requestDone=false; render(); return; }
+  if (action === "entry-role" && ENTRY_ROLES.some(role=>role.key===button.dataset.role)) {
+    entry.role=button.dataset.role;
+    entry.view=entry.role==="presidents"?"presidents":"login";
+    authorityState.error=""; entry.requestDone=false; render(); return;
+  }
+  if (action === "entry-login") {entry.view="login";authorityState.error="";render();return;}
+  if (action === "entry-request" && entry.role!=="presidents") {entry.view="request";authorityState.error="";render();return;}
+  if (action === "entry-accept") {entry.view="accept";authorityState.error="";render();return;}
+  if (action === "entry-create" && entry.role==="presidents") {
+    if (currentDoc()?.organization?.domainVerified) {
+      entry.view="login";
+      authorityState.error="L’association est déjà configurée sur cet appareil. Connectez-vous avec votre compte.";
+      render();
+      return;
+    }
+    setup.active=true; setup.step=0; entry.view="create"; authorityState.error="";render();return;
+  }
+  if (action === "setup-explore") {
+    if (currentDoc()?.organization?.domainVerified) {
+      showToast("Authentification nécessaire pour retrouver cette association",true);
+      return;
+    }
+    setup.active = false; entry.view = "inside"; currentView = "dashboard"; render(); return;
+  }
+  if (action === "setup-resume") { setup.active = true; entry.view = "create"; setup.step = 0; render(); return; }
+  if (action === "setup-back") { setup.step = Math.max(0, setup.step - 1); render(); return; }
+  if (action === "setup-copy-dns" && setup.challenge) { void copyText(setup.challenge.dnsValue, "Valeur TXT copiée"); return; }
+  if (action === "setup-method" && ["dns", "file"].includes(button.dataset.method)) {
+    setup.method = button.dataset.method;
+    render();
+    return;
+  }
+  if (action === "setup-download-proof" && setup.challenge) {
+    saveDownloadedText(
+      setup.challenge.fileName || "verger-verification.txt",
+      "text/plain",
+      setup.challenge.fileContents || (setup.challenge.dnsValue + "\n"),
+    );
+    return;
+  }
+  if (action === "open-view" && viewAllowed(button.dataset.view)) { currentView = button.dataset.view; render(); return; }
+  if (action === "open-embedded-chat" && embeddedSimplex) {
+    const org=currentDoc()?.organization;
+    const account=authorityState.account;
+    const token=nativeChatSessionToken();
+    if (!account || !token || !org?.domainVerified || account.organizationId!==org.id) {
+      showToast("Connectez-vous à votre association avant d'ouvrir la messagerie.",true);
+      return;
+    }
+    // Keep the authenticated home screen behind the native messenger.
+    // Android Back will reveal this existing WebView, not the initial role selector.
+    currentView="dashboard";
+    render();
+    window.VergerNative.openChat(token,org.id,org.themeColor || "#315f3a");
+    return;
+  }
+  if (action === "copy-simplex-link") void copyText(readSimplexLink(localStorage, handle.url), "Lien SimpleX copié");
+  if (action === "toggle-volunteer") toggleVolunteer(button);
+  if (action === "remove-volunteer") updateParticipants("volunteer", button.dataset.id, button.dataset.memberId, false);
+  if (action === "remove-attendance") updateParticipants("event", button.dataset.id, button.dataset.memberId, false);
+  if (action === "export-event-ics") exportCalendarEvent(button.dataset.id);
   if (action === "toggle-help") toggleHelp(button);
   if (action === "archive-item") archiveItem(button);
   if (action === "toggle-poll-create") togglePollCreate();
@@ -616,9 +999,9 @@ document.addEventListener("click", (event) => {
     else void copyText(link, "Lien public copié");
   }
   if (action === "export-meeting") downloadMeetingMarkdown(button.dataset.id);
-  if (action === "copy-link") copyDocumentLink();
-  if (action === "export") downloadExport();
-  if (action === "import") document.getElementById("import-file")?.click();
+  if (action === "copy-link" && isAdministrator()) copyDocumentLink();
+  if (action === "export" && isAdministrator()) downloadExport();
+  if (action === "import" && isAdministrator()) document.getElementById("import-file")?.click();
 });
 
 document.addEventListener("change", (event) => {
@@ -646,6 +1029,7 @@ installButton.addEventListener("click", async () => {
 window.addEventListener("appinstalled", () => { installButton.hidden = true; showToast("Verger Associations installé"); });
 window.addEventListener("online", updateConnectionState);
 window.addEventListener("offline", updateConnectionState);
+window.matchMedia?.("(prefers-color-scheme: dark)")?.addEventListener?.("change", render);
 
 handle.on("change", render);
 render();

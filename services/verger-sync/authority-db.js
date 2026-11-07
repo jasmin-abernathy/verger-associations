@@ -102,6 +102,38 @@ export function migrateAuthorityDatabase(db) {
     CREATE INDEX IF NOT EXISTS idx_polls_organization_status ON polls(organization_id, status, created_at);
     CREATE INDEX IF NOT EXISTS idx_responses_poll ON poll_responses(poll_id);
   `);
+  // Additive migration: preserve existing pilot accounts and documents.
+  const columns = db.prepare("PRAGMA table_info(organizations)").all().map(row => row.name);
+  for (const [name, type] of [
+    ["domain", "TEXT"], ["domain_verified_at", "TEXT"],
+    ["description", "TEXT"], ["theme_color", "TEXT"], ["modules_json", "TEXT"]
+  ]) {
+    if (!columns.includes(name)) db.exec(`ALTER TABLE organizations ADD COLUMN ${name} ${type}`);
+  }
+  db.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_organizations_domain_unique ON organizations(domain);
+    CREATE TABLE IF NOT EXISTS domain_verifications (
+      id TEXT PRIMARY KEY,
+      domain TEXT NOT NULL,
+      token_hash TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      attempts INTEGER NOT NULL DEFAULT 0,
+      used_at TEXT,
+      created_at TEXT NOT NULL
+    ) STRICT;
+    CREATE INDEX IF NOT EXISTS idx_verifications_domain ON domain_verifications(domain, expires_at);
+    CREATE TABLE IF NOT EXISTS access_requests (
+      id TEXT PRIMARY KEY,
+      organization_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      email TEXT NOT NULL,
+      role TEXT NOT NULL CHECK (role IN ('facilitator','member')),
+      message TEXT NOT NULL DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
+      created_at TEXT NOT NULL,
+      resolved_at TEXT
+    ) STRICT;
+    CREATE INDEX IF NOT EXISTS idx_access_requests_org_status ON access_requests(organization_id, status, created_at);
+  `);
 }
 
 export function transaction(db, callback) {

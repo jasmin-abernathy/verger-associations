@@ -38,6 +38,33 @@ export async function acceptInvitation({ token, password }) {
   return data;
 }
 
+export function beginDomainVerification(domain) {
+  return request("/organizations/verification/start", {
+    method: "POST", body: { domain }, authenticated: false,
+  });
+}
+
+export async function completeDomainRegistration(payload) {
+  const path = nativePlatform ? "/native/organizations/verification/complete" : "/organizations/verification/complete";
+  const data = await request(path, { method: "POST", body: payload, authenticated: false });
+  if (nativePlatform) nativeSessionToken = String(data.sessionToken || "");
+  return data;
+}
+
+export function organizationByDomain(domain) {
+  return request("/organizations/by-domain/" + encodeURIComponent(domain), { authenticated: false });
+}
+export function requestAssociationAccess({ domain, email, role, message = "" }) {
+  return request("/access-requests", {method:"POST",authenticated:false,body:{domain,email,role,message}});
+}
+export function listAssociationAccessRequests() { return request("/access-requests"); }
+export function approveAssociationAccessRequest(id) {
+  return request("/access-requests/" + encodeURIComponent(id) + "/approve", {method:"POST",body:{}});
+}
+export function rejectAssociationAccessRequest(id) {
+  return request("/access-requests/" + encodeURIComponent(id) + "/reject", {method:"POST",body:{}});
+}
+
 export function createInvitation({ email, role, memberId = null }) {
   return request("/invitations", { method: "POST", body: { email, role, memberId: memberId || null } });
 }
@@ -82,6 +109,7 @@ export function getPublicPollResults(id) {
 
 export function clearNativeSession() { nativeSessionToken = ""; }
 export function hasNativeSession() { return nativePlatform && Boolean(nativeSessionToken); }
+export function nativeChatSessionToken() { return nativePlatform ? nativeSessionToken : ""; }
 
 async function request(path, {
   method = "GET",

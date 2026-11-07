@@ -50,6 +50,12 @@ Accueil, Entraide et les Consultations vérifiées sont désormais amorcés. Sig
 
 Il ajoute une barrière par jeton au serveur de référence Automerge, mais **ce jeton partagé n’est pas encore une authentification multi-utilisateur complète**. Le serveur ne doit pas être mutualisé entre associations non liées avant ajout des comptes, invitations et révocations.
 
+## Discussion SimpleX
+
+Une passerelle facultative permet de conserver un lien d’invitation par espace et
+par appareil, puis de l’ouvrir dans SimpleX. Les messages ne sont pas encore
+embarqués dans Verger. Voir [le plan de réutilisation](docs/SIMPLEX-INTEGRATION.md).
+
 ## Prototype Webxdc historique
 
 [`apps/reunions-decisions`](apps/reunions-decisions/README.md) reste disponible et testable. Il a validé le modèle métier du premier module : ordre du jour, propositions, objections, amendements, décisions, actions, archivage et exports.
@@ -85,6 +91,8 @@ Une intégration future peut ajouter des liens, notifications ou exports entre l
 - développement progressif à partir de besoins testés.
 
 ## Documentation
+
+- [Création et vérification d'une association](docs/CONFIGURATION-ASSOCIATION.md)
 
 - [Architecture v0.3](docs/ARCHITECTURE-V03.md)
 - [Application Android](docs/ANDROID.md)
