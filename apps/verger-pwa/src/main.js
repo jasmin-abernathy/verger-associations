@@ -144,6 +144,9 @@ async function prepareLogo(file) {
 
 async function handleSetupForm(form, type, values) {
   try {
+    if (currentDoc()?.organization?.domainVerified) {
+      throw new Error("Cet appareil est déjà lié à une association. Connectez-vous plutôt que de recréer un espace.");
+    }
     if (type === "setup-identity") {
       setup.name = String(values.name || "").trim();
       if (!setup.name) throw new Error("Indiquez le nom de votre association");
@@ -927,9 +930,21 @@ document.addEventListener("click", (event) => {
   if (action === "entry-request" && entry.role!=="presidents") {entry.view="request";authorityState.error="";render();return;}
   if (action === "entry-accept") {entry.view="accept";authorityState.error="";render();return;}
   if (action === "entry-create" && entry.role==="presidents") {
+    if (currentDoc()?.organization?.domainVerified) {
+      entry.view="login";
+      authorityState.error="L’association est déjà configurée sur cet appareil. Connectez-vous avec votre compte.";
+      render();
+      return;
+    }
     setup.active=true; setup.step=0; entry.view="create"; authorityState.error="";render();return;
   }
-  if (action === "setup-explore") { setup.active = false; entry.view = "inside"; currentView = "dashboard"; render(); return; }
+  if (action === "setup-explore") {
+    if (currentDoc()?.organization?.domainVerified) {
+      showToast("Authentification nécessaire pour retrouver cette association",true);
+      return;
+    }
+    setup.active = false; entry.view = "inside"; currentView = "dashboard"; render(); return;
+  }
   if (action === "setup-resume") { setup.active = true; entry.view = "create"; setup.step = 0; render(); return; }
   if (action === "setup-back") { setup.step = Math.max(0, setup.step - 1); render(); return; }
   if (action === "setup-copy-dns" && setup.challenge) { void copyText(setup.challenge.dnsValue, "Valeur TXT copiée"); return; }
