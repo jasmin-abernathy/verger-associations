@@ -44,3 +44,11 @@ Les demandes sont limitées par adresse IP côté serveur. Une fois le domaine i
 - Les sessions natives du prototype sont conservées uniquement en mémoire et nécessitent une reconnexion après un redémarrage complet.
 - La modification visuelle du logo concerne l'intérieur de Verger ; le nom et l'icône sur le lanceur Android restent ceux de l'APK commune.
 - Aucun hébergement Verger de production n'est implicitement configuré par ce parcours. Ne pas déclarer une association « prête pour plusieurs appareils » avant déploiement et tests de synchronisation.
+
+## Entrée par responsabilité — pilote
+
+À l'ouverture, l'écran propose, dans cet ordre : **Bénévoles**, **Bureau / fondateurs**, **Présidence / coprésidence**. Les bénévoles et membres du bureau ont une connexion directe, un formulaire de demande d'accès et la possibilité d'activer un code d'invitation. La présidence peut configurer l'association (vérification DNS/fichier) ou se connecter à un espace existant.
+
+**Sécurité :** ces boutons ne sont pas des permissions. Le serveur vérifie un vrai compte avec rôle `member`, `facilitator` ou `administrator`. Une demande d'accès ne crée aucun compte, n'accorde aucune permission et arrive dans l'espace d'administration de l'association. La présidence peut l'approuver : le serveur émet alors un code d'invitation à communiquer à la personne par un canal choisi par l'association. **Aucun e-mail automatique n'est envoyé** et l'adresse déclarée par le demandeur n'est pas vérifiée. L'interface doit prévenir l'administrateur de cette limite.
+
+La recherche d'association par domaine n'est possible que pour les domaines déjà vérifiés. Ne jamais débloquer les modules administratifs avec un rôle choisi visuellement ou un compte appartenant à une autre association. La synchronisation des données partagées entre appareils reste hors de portée de ce pilote ; une authentification réussie ne constitue pas un accès aux données des autres appareils.
