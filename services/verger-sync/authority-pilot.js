@@ -8,6 +8,7 @@ export function createAuthorityPilotApp({
   registrationDomains,
   allowedOrigins = [],
   nativeOrigins = [],
+  deliverPasswordReset,
 } = {}) {
   if (!db) throw new Error("Pilot database required");
   const allowedDomains = new Set((registrationDomains || []).map(domain => normalizeDomain(domain)));
@@ -38,7 +39,7 @@ export function createAuthorityPilotApp({
     }
     next();
   });
-  mountAuthorityApi(app, { db, cookieSecure: true, allowedOrigins, nativeOrigins });
+  mountAuthorityApi(app, { db, cookieSecure: true, allowedOrigins, nativeOrigins, deliverPasswordReset });
   app.get("/health", (_request, response) => {
     response.json({ ok: true, service: "verger-authority-pilot", syncProvisioned: false });
   });
