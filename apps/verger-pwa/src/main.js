@@ -144,6 +144,17 @@ async function prepareLogo(file) {
   }
 }
 
+function openExistingAssociationLogin(domain = setup.domain, email = setup.email, message = "") {
+  setup.password = "";
+  setup.challenge = null;
+  entry.role = "presidents";
+  entry.view = "login";
+  entry.domain = String(domain || "").trim();
+  entry.email = String(email || "").trim();
+  authorityState.error = message;
+  render();
+}
+
 async function handleSetupForm(form, type, values) {
   try {
     if (currentDoc()?.organization?.domainVerified) {
@@ -208,6 +219,10 @@ async function handleSetupForm(form, type, values) {
     }
     render();
   } catch (error) {
+    if (type === "setup-owner" && error?.status === 409) {
+      openExistingAssociationLogin(setup.domain, setup.email, "Ce domaine est déjà associé à un espace. Utilisez le mot de passe de votre compte existant.");
+      return;
+    }
     showToast(error?.message || "Configuration impossible", true);
     render();
   }
@@ -922,6 +937,12 @@ document.addEventListener("click", (event) => {
   const button = event.target.closest?.("[data-action]");
   if (!button) return;
   const action = button.dataset.action;
+  if (action === "setup-existing-login") {
+    const ownerForm = button.closest(".setup-card")?.querySelector('[data-form="setup-owner"]');
+    const values = ownerForm ? new FormData(ownerForm) : null;
+    openExistingAssociationLogin(values?.get("domain") ?? setup.domain, values?.get("email") ?? setup.email);
+    return;
+  }
   if (action === "entry-home") { entry.view="choices"; authorityState.error=""; entry.requestDone=false; render(); return; }
   if (action === "entry-role" && ENTRY_ROLES.some(role=>role.key===button.dataset.role)) {
     entry.role=button.dataset.role;
