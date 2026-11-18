@@ -40,7 +40,7 @@ export function renderSetupWizard(s, apiUrl) {
       <label>E-mail du responsable<input name="email" type="email" required autocomplete="email" maxlength="254" value="${e(s.email)}"></label>
       <label>Mot de passe (12 caractères minimum)<input name="password" type="password" required minlength="12" autocomplete="new-password"></label>
       ${!apiUrl ? '<details><summary>Adresse du serveur Verger (prototype)</summary><label>URL du serveur<input name="apiUrl" type="url" placeholder="https://serveur.fr/api/v1"></label></details>' : `<p class="muted">Serveur : ${e(apiUrl)}</p>`}
-      <button>Obtenir mon code de vérification</button></form>${actionRow}</article>`;
+      <button>Obtenir mon code de vérification</button></form><p><button type="button" class="secondary" data-action="setup-existing-login">Se connecter à un espace existant</button></p>${actionRow}</article>`;
   const challenge = s.challenge;
   const method = s.method === "file" ? "file" : "dns";
   const methodSelector = `<fieldset class="setup-methods"><legend>Comment souhaitez-vous vérifier votre domaine ?</legend>

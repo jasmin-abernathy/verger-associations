@@ -46,6 +46,9 @@ import {
 } from "./platform.js";
 import {
   beginDomainVerification,
+  requestPasswordRecovery,
+  completePasswordRecovery,
+  updateOrganizationProfile,
   organizationByDomain,
   requestAssociationAccess,
   listAssociationAccessRequests,
@@ -144,6 +147,17 @@ async function prepareLogo(file) {
   }
 }
 
+function openExistingAssociationLogin(domain = setup.domain, email = setup.email, message = "") {
+  setup.password = "";
+  setup.challenge = null;
+  entry.role = "presidents";
+  entry.view = "login";
+  entry.domain = String(domain || "").trim();
+  entry.email = String(email || "").trim();
+  authorityState.error = message;
+  render();
+}
+
 async function handleSetupForm(form, type, values) {
   try {
     if (currentDoc()?.organization?.domainVerified) {
@@ -208,6 +222,10 @@ async function handleSetupForm(form, type, values) {
     }
     render();
   } catch (error) {
+    if (type === "setup-owner" && error?.status === 409) {
+      openExistingAssociationLogin(setup.domain, setup.email, "Ce domaine est déjà associé à un espace. Utilisez le mot de passe de votre compte existant.");
+      return;
+    }
     showToast(error?.message || "Configuration impossible", true);
     render();
   }
@@ -313,7 +331,7 @@ async function handleForm(form) {
   const meetingId = form.dataset.meetingId || values.meetingId || "";
   const proposalId = form.dataset.proposalId || values.proposalId || "";
 
-  if (["entry-login","entry-request","entry-accept","access-approve","access-reject","account-login","account-accept-invite","account-invite","poll-create","poll-edit","poll-response","poll-cancel"].includes(type)) {
+  if (["entry-login","entry-recovery-request","entry-recovery-complete","entry-request","entry-accept","access-approve","access-reject","account-login","account-accept-invite","account-invite","poll-create","poll-edit","poll-response","poll-cancel"].includes(type)) {
     await handleAuthorityForm(form, type, values);
     return;
   }
@@ -382,12 +400,15 @@ async function handleForm(form) {
     case "resource-edit":
       mutate((doc) => updateResource(doc, form.dataset.id, values), "Ressource mise à jour");
       break;
-    case "organization":
-      mutate((doc) => {
-        doc.organization.name = String(values.name || "").trim().slice(0, 180) || "Mon association";
-        doc.organization.description = String(values.description || "").trim().slice(0, 1000);
+    case "organization": {
+      const { organization } = await updateOrganizationProfile(values);
+      if (organization.id !== currentDoc()?.organization?.id) return;
+      mutate(doc => {
+        doc.organization.name = organization.name;
+        doc.organization.description = organization.description;
       }, "Association mise à jour");
       break;
+    }
     case "modules": {
       let logoDataUrl = "";
       try {
@@ -491,6 +512,11 @@ async function loadAuthority() {
     }
     const session = await getSession();
     authorityState.account = session.account || null;
+    const profile = session.organization;
+    const localProfile = currentDoc()?.organization;
+    if (profile && profile.id === localProfile?.id && (profile.name !== localProfile.name || profile.description !== localProfile.description)) {
+      changeDoc(doc => { doc.organization.name = profile.name; doc.organization.description = profile.description; });
+    }
     if (authorityState.account) {
       entry.view = "inside";
       if (authorityState.account.role === "administrator") {
@@ -546,6 +572,22 @@ async function openAuthorityPoll(id) {
 async function handleAuthorityForm(form, type, values) {
   try {
     authorityState.error = "";
+    if (type === "entry-recovery-request") {
+      entry.domain = String(values.domain || "").trim();
+      entry.email = String(values.email || "").trim();
+      await requestPasswordRecovery({ domain: entry.domain, email: entry.email });
+      entry.recoveryRequested = true;
+      render();
+      return;
+    }
+    if (type === "entry-recovery-complete") {
+      await completePasswordRecovery({ code: values.code, password: values.password });
+      entry.recoveryRequested = false;
+      entry.view = "login";
+      showToast("Mot de passe modifié. Vous pouvez vous connecter.");
+      render();
+      return;
+    }
     if (type === "entry-request") {
       entry.domain = String(values.domain || "").trim();
       entry.email = String(values.email || "").trim();
@@ -571,7 +613,8 @@ async function handleAuthorityForm(form, type, values) {
       }
       changeDoc(doc=>{
         doc.organization.id=org.id;
-        doc.organization.name=org.name;
+        doc.organization.name=data.organization?.name || org.name;
+        if (typeof data.organization?.description === "string") doc.organization.description=data.organization.description;
         doc.organization.domain=org.domain;
         doc.organization.domainVerified=true;
         doc.organization.setupCompleted=true;
@@ -922,11 +965,27 @@ document.addEventListener("click", (event) => {
   const button = event.target.closest?.("[data-action]");
   if (!button) return;
   const action = button.dataset.action;
+  if (action === "setup-existing-login") {
+    const ownerForm = button.closest(".setup-card")?.querySelector('[data-form="setup-owner"]');
+    const values = ownerForm ? new FormData(ownerForm) : null;
+    openExistingAssociationLogin(values?.get("domain") ?? setup.domain, values?.get("email") ?? setup.email);
+    return;
+  }
   if (action === "entry-home") { entry.view="choices"; authorityState.error=""; entry.requestDone=false; render(); return; }
   if (action === "entry-role" && ENTRY_ROLES.some(role=>role.key===button.dataset.role)) {
     entry.role=button.dataset.role;
     entry.view=entry.role==="presidents"?"presidents":"login";
     authorityState.error=""; entry.requestDone=false; render(); return;
+  }
+  if (action === "entry-recovery") {
+    const values = new FormData(button.form);
+    entry.domain = String(values.get("domain") || "").trim();
+    entry.email = String(values.get("email") || "").trim();
+    entry.recoveryRequested = false;
+    entry.view = "recovery";
+    authorityState.error = "";
+    render();
+    return;
   }
   if (action === "entry-login") {entry.view="login";authorityState.error="";render();return;}
   if (action === "entry-request" && entry.role!=="presidents") {entry.view="request";authorityState.error="";render();return;}

@@ -30,10 +30,16 @@ export function renderRoleEntry(state, { apiUrl = "", error = "", loading = fals
   if (state.view === "login") {
     return prefix + '<p>Connectez-vous avec votre compte personnel. Un rôle plus élevé ne peut pas être obtenu en choisissant un autre accès.</p><form data-form="entry-login" class="form">'+domain+
       '<label>Adresse e-mail<input name="email" type="email" autocomplete="username" maxlength="254" value="'+e(state.email || '')+'" required></label>'+
-      '<label>Mot de passe<input name="password" type="password" autocomplete="current-password" required></label><button>Se connecter</button></form>'+
+      '<label>Mot de passe<input name="password" type="password" autocomplete="current-password" required></label><button>Se connecter</button><button type="button" class="secondary" data-action="entry-recovery">Mot de passe oublié ?</button></form>'+
       '<div class="entry-actions"><button type="button" class="secondary" data-action="entry-accept">J’ai un code d’invitation</button>'+
       (state.role !== "presidents" ? '<button type="button" class="secondary" data-action="entry-request">Demander un accès</button>' : '')+
       home+'</div></article>';
+  }
+  if (state.view === "recovery") {
+    return prefix + (state.recoveryRequested
+      ? '<p role="status">Si ce compte existe, un code a été envoyé à son adresse e-mail.</p><form data-form="entry-recovery-complete" class="form"><label>Code reçu par e-mail<input name="code" autocomplete="one-time-code" maxlength="32" required></label><label>Nouveau mot de passe<input name="password" type="password" autocomplete="new-password" minlength="12" maxlength="1024" required></label><button>Enregistrer le mot de passe</button></form>'
+      : '<form data-form="entry-recovery-request" class="form">' + domain + '<label>Adresse e-mail du compte<input name="email" type="email" autocomplete="email" required maxlength="254" value="'+e(state.email || '')+'"></label><button>Recevoir un code</button></form>') +
+      '<div class="entry-actions"><button type="button" class="secondary" data-action="entry-login">Retour à la connexion</button></div></article>';
   }
   if (state.view === "request") {
     return prefix +

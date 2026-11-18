@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { openAuthorityDatabase } from "./authority-db.js";
+import { createOrganization, createAccount, createSession } from "./consultations-service.js";
 import { createAuthorityPilotApp } from "./authority-pilot.js";
 
 test("Pilot only allows chosen domain, without opening sync or registering anyone", async () => {
@@ -51,6 +52,41 @@ test("Pilot refuses to run without explicit allowlist", () => {
   try {
     assert.throws(() => createAuthorityPilotApp({ db, registrationDomains: [] }), /allowlist/);
   } finally {
+    db.close();
+  }
+});
+
+test("A profile change is limited to the signed-in administrator's organization", async () => {
+  const db = openAuthorityDatabase(":memory:");
+  const organizationId = createOrganization(db, { name: "Initial" });
+  const otherId = createOrganization(db, { name: "Autre association" });
+  const app = createAuthorityPilotApp({ db, registrationDomains: ["association-test.fr"] });
+  const tokenFor = role => createSession(db, createAccount(db, {
+    organizationId, email: role + "@association-test.fr", password: "mot-de-passe-initial", role,
+  })).token;
+  const member = tokenFor("member");
+  const admin = tokenFor("administrator");
+  const server = app.listen(0, "127.0.0.1");
+  await new Promise(resolve => server.once("listening", resolve));
+  const base = "http://127.0.0.1:" + server.address().port + "/api/v1";
+  const update = token => fetch(base + "/organization/profile", {
+    method: "PATCH",
+    headers: { Authorization: "Bearer " + token, "Content-Type": "application/json", Origin: base.slice(0, -7) },
+    body: JSON.stringify({ id: otherId, name: "Nouveau nom", description: "Nouvelle description" }),
+  });
+  try {
+    assert.equal((await update(member)).status, 403);
+    const response = await update(admin);
+    assert.equal(response.status, 200);
+    assert.deepEqual((await response.json()).organization, {
+      id: organizationId, name: "Nouveau nom", description: "Nouvelle description",
+    });
+    const session = await fetch(base + "/session", { headers: { Authorization: "Bearer " + member } });
+    assert.equal((await session.json()).organization.description, "Nouvelle description");
+    assert.equal(db.prepare("SELECT name FROM organizations WHERE id = ?").get(otherId).name, "Autre association");
+  } finally {
+    server.closeAllConnections();
+    await new Promise(resolve => server.close(resolve));
     db.close();
   }
 });

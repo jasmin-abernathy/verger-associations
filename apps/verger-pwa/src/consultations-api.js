@@ -151,3 +151,15 @@ async function request(path, {
   }
   return data;
 }
+
+export function requestPasswordRecovery({ domain, email }) {
+  return request("/password-reset/request", { method: "POST", body: { domain, email }, authenticated: false });
+}
+
+export function completePasswordRecovery({ code, password }) {
+  return request("/password-reset/complete", { method: "POST", body: { code, password }, authenticated: false });
+}
+
+export function updateOrganizationProfile({ name, description }) {
+  return request("/organization/profile", { method: "PATCH", body: { name, description } });
+}
