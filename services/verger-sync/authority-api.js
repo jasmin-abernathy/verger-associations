@@ -20,15 +20,21 @@ import {
 import { parseCookies } from "./authority-security.js";
 import { publicOrganization, requestAccess, listAccessRequests, decideAccessRequest } from "./access-requests.js";
 
+import { requestPasswordReset, resetPassword } from "./password-reset.js";
+
+function organizationProfile(db, account) {
+  return db.prepare("SELECT id, name, COALESCE(description, '') AS description FROM organizations WHERE id = ?").get(account.organizationId);
+}
+
 const COOKIE = "verger_session";
 
-export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins = [], nativeOrigins = [], dnsResolver, fileReader }) {
+export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins = [], nativeOrigins = [], dnsResolver, fileReader, deliverPasswordReset }) {
   const mutationOrigins = [...new Set([...allowedOrigins, ...nativeOrigins])];
   // Limitation par IP plutôt que par domaine : un tiers ne doit pas pouvoir
   // saturer les défis d'une association et bloquer le propriétaire du DNS.
   const domainChallengeRates = new Map();
-  function challengeRateLimited(request) {
-    const key = String(request.ip || request.socket?.remoteAddress || "");
+  function challengeRateLimited(request, scope = 'domain') {
+    const key = scope + ":" + String(request.ip || request.socket?.remoteAddress || "");
     const nowMs = Date.now();
     const previous = domainChallengeRates.get(key);
     const current = !previous || previous.until < nowMs ? { count: 0, until: nowMs + 3600000 } : previous;
@@ -136,7 +142,7 @@ export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins
       const account = authenticateAccount(db, request.body || {});
       const session = createSession(db, account);
       setSessionCookie(response, session.token, session.expiresAt, cookieSecure);
-      response.json({ account });
+      response.json({ account, organization: organizationProfile(db, account) });
     } catch (error) { next(error); }
   });
 
@@ -144,7 +150,43 @@ export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins
     try {
       const account = authenticateAccount(db, request.body || {});
       const session = createSession(db, account);
-      response.json({ account, sessionToken: session.token, expiresAt: session.expiresAt });
+      response.json({ account, organization: organizationProfile(db, account), sessionToken: session.token, expiresAt: session.expiresAt });
+    } catch (error) { next(error); }
+  });
+
+  app.post("/api/v1/password-reset/request", (request, response, next) => {
+    try {
+      if (!deliverPasswordReset) return response.status(503).json({ error: "recovery_unavailable", message: "La récupération par e-mail n’est pas configurée sur ce serveur." });
+      if (challengeRateLimited(request, "reset-request")) return response.status(429).json({ error: "rate_limited", message: "Trop de demandes. Réessayez plus tard." });
+      const delivery = requestPasswordReset(db, request.body || {});
+      response.status(202).json({ accepted: true });
+      if (delivery) Promise.resolve().then(() => deliverPasswordReset(delivery)).catch(() => {
+        console.error("Verger password reset email delivery failed");
+      });
+    } catch (error) { next(error); }
+  });
+
+  app.post("/api/v1/password-reset/complete", (request, response, next) => {
+    try {
+      if (challengeRateLimited(request, "reset-complete")) return response.status(429).json({ error: "rate_limited", message: "Trop de tentatives. Réessayez plus tard." });
+      resetPassword(db, request.body || {});
+      response.json({ ok: true });
+    } catch (error) { next(error); }
+  });
+
+  app.patch("/api/v1/organization/profile", withSession(db), (request, response, next) => {
+    try {
+      if (request.account.role !== "administrator") {
+        return response.status(403).json({ error: "forbidden", message: "Modification réservée à la présidence." });
+      }
+      const { name, description } = request.body || {};
+      if (typeof name !== "string" || !name.trim() || name.trim().length > 180 ||
+          typeof description !== "string" || description.trim().length > 1000) {
+        return response.status(400).json({ error: "invalid_profile", message: "Renseignez un nom valide et une description de 1 000 caractères maximum." });
+      }
+      db.prepare("UPDATE organizations SET name = ?, description = ? WHERE id = ?")
+        .run(name.trim(), description.trim(), request.account.organizationId);
+      response.json({ organization: organizationProfile(db, request.account) });
     } catch (error) { next(error); }
   });
 
@@ -157,7 +199,7 @@ export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins
   });
 
   app.get("/api/v1/session", withSession(db), (request, response) => {
-    response.json({ account: request.account });
+    response.json({ account: request.account, organization: organizationProfile(db, request.account) });
   });
 
   app.post("/api/v1/invitations", withSession(db), (request, response, next) => {
