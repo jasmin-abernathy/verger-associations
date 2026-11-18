@@ -3,6 +3,9 @@ import express from "express";
 import { openAuthorityDatabase } from "./authority-db.js";
 import { createAuthorityPilotApp } from "./authority-pilot.js";
 
+import { sendResetEmail } from "./password-reset.js";
+
+const resetSender = String(process.env.VERGER_RESET_MAIL_FROM || "").trim();
 const databaseFile = String(process.env.VERGER_AUTH_DB || "");
 const registrationDomains = String(process.env.VERGER_REGISTRATION_DOMAINS || "")
   .split(",").map(value => value.trim()).filter(Boolean);
@@ -18,7 +21,9 @@ if (!path.isAbsolute(databaseFile) || !registrationDomains.length || !nativeOrig
 // Keep SQLite, WAL and SHM files private even when Passenger creates them later.
 process.umask(0o077);
 const db = openAuthorityDatabase(databaseFile);
-const app = createAuthorityPilotApp({ db, registrationDomains, allowedOrigins, nativeOrigins });
+const app = createAuthorityPilotApp({ db, registrationDomains, allowedOrigins, nativeOrigins,
+  deliverPasswordReset: resetSender ? delivery => sendResetEmail(resetSender, delivery) : undefined,
+});
 const port = Number(process.env.PORT || 3000);
 // CloudLinux Passenger retains /verger-api in request.url when mounting an app at a sub-URI.
 const publicPath = String(process.env.VERGER_BASE_PATH || "/verger-api").trim();
