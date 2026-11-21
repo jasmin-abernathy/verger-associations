@@ -253,7 +253,7 @@ function renderPollResults(results, publicView) {
 
 function legacyConsultations(items) {
   if (!items.length) return "";
-  return `<details class="card legacy-consultations"><summary>Anciennes consultations expérimentales (${items.length})</summary>
+  return `<details class="card legacy-consultations"><summary>Anciennes consultations locales (${items.length})</summary>
     <p class="warning">Ces éléments proviennent de l’ancien format Automerge. Les noms et réponses n’ont pas été vérifiés par un compte serveur et ne constituent pas des votes authentifiés.</p>
     <ul class="clean-list">${items.map((item) => `<li><strong>${e(item.title || "Consultation")}</strong><span>${e(item.question || "")} · ${Object.keys(item.responses || {}).length} réponse(s)</span></li>`).join("")}</ul>
   </details>`;
@@ -316,7 +316,7 @@ function admin(state, context) {
       ${approval ? `<p role="status">Invitation pour <strong>${e(approval.email)}</strong> (${e(approval.role === "facilitator" ? "Bureau / fondateurs" : "Bénévoles")}) : <code>${e(approval.token)}</code></p><button type="button" data-action="copy-invitation-code" data-code="${e(approval.token)}">Copier le code à transmettre</button>` : ""}
       ${requests.length ? `<div class="stack">${requests.map(req=>`<div class="subcard"><p><strong>${e(req.email)}</strong> — ${e(req.role === "facilitator" ? "Bureau / fondateurs" : "Bénévoles")}</p>${req.message ? `<p>${e(req.message)}</p>` : ""}<div class="button-row"><form data-form="access-approve"><input type="hidden" name="requestId" value="${e(req.id)}"><button>Approuver</button></form><form data-form="access-reject"><input type="hidden" name="requestId" value="${e(req.id)}"><button class="secondary">Refuser</button></form></div></div>`).join("")}</div>` : '<p>Aucune demande en attente.</p>'}
     </article>
-    <p class="warning">Le serveur protège les comptes et consultations. Le document local-first reste un prototype : le partage par jeton Sync ne fournit pas encore des permissions complètes par membre.</p>`;
+    <p class="warning">Les comptes et consultations sont gérés par le serveur. Les données de gestion restent sur cet appareil sans synchronisation configurée.</p>`;
 }
 
 function settings(state, context) {
@@ -337,7 +337,7 @@ function settings(state, context) {
         <label>Jeton Sync<input name="token" type="password" autocomplete="off" value="${e(context.syncToken)}"></label>
         <label>URL publique du Verger <span class="muted">(pour partager des résultats)</span><input name="publicWebUrl" type="url" placeholder="https://verger.exemple.fr/" value="${e(context.publicWebUrl)}"></label>
         <button>Enregistrer le serveur</button>
-      </form><p class="warning">Le jeton WebSocket reste une protection de pilote. Les comptes de consultations utilisent une session séparée.${context.nativePlatform ? " Dans l’APK debug, la connexion au compte est volontairement perdue après un redémarrage complet." : ""}</p></article>
+      </form><p class="warning">La synchronisation est facultative. Elle doit être configurée par la personne qui héberge le serveur.</p></article>
       <article class="card"><h2>État technique</h2><dl class="tech"><dt>Plateforme</dt><dd>${context.nativePlatform ? `Application ${e(context.platformName)}` : "Web / PWA"}</dd><dt>Document</dt><dd><code>${e(context.docUrl)}</code></dd><dt>Stockage</dt><dd>IndexedDB local</dd><dt>Conflits</dt><dd>Automerge CRDT</dd><dt>API</dt><dd>${context.apiUrl ? e(context.apiUrl) : "Non configurée"}</dd><dt>Réseau</dt><dd>${context.syncUrl ? "Local + WebSocket" : "Local uniquement"}</dd></dl></article>
     </div>`;
 }
