@@ -39,7 +39,7 @@ export function renderSetupWizard(s, apiUrl) {
       <label>Nom de domaine<input name="domain" required placeholder="association.fr" autocapitalize="none" spellcheck="false" value="${e(s.domain)}"></label>
       <label>E-mail du responsable<input name="email" type="email" required autocomplete="email" maxlength="254" value="${e(s.email)}"></label>
       <label>Mot de passe (12 caractères minimum)<input name="password" type="password" required minlength="12" autocomplete="new-password"></label>
-      ${!apiUrl ? '<details><summary>Adresse du serveur Verger (prototype)</summary><label>URL du serveur<input name="apiUrl" type="url" placeholder="https://serveur.fr/api/v1"></label></details>' : `<p class="muted">Serveur : ${e(apiUrl)}</p>`}
+      ${!apiUrl ? '<details><summary>Adresse du serveur Verger</summary><label>URL du serveur<input name="apiUrl" type="url" placeholder="https://serveur.fr/api/v1"></label></details>' : `<p class="muted">Serveur : ${e(apiUrl)}</p>`}
       <button>Obtenir mon code de vérification</button></form><p><button type="button" class="secondary" data-action="setup-existing-login">Se connecter à un espace existant</button></p>${actionRow}</article>`;
   const challenge = s.challenge;
   const method = s.method === "file" ? "file" : "dns";
@@ -64,6 +64,6 @@ export function renderSetupWizard(s, apiUrl) {
     <div class="setup-method-content">${proof}</div>
     <p class="muted">Code valable jusqu'au ${challenge?.expiresAt ? e(new Date(challenge.expiresAt).toLocaleString("fr-FR")) : "—"}.</p>
     <form data-form="setup-verify" class="form"><button>${method === "dns" ? "Vérifier le DNS et créer mon espace" : "Vérifier le fichier et créer mon espace"}</button></form>
-    <p class="warning">La synchronisation sécurisée entre plusieurs téléphones reste à provisionner séparément dans ce prototype.</p>
+    <p class="warning">Les données de gestion restent sur cet appareil.</p>
     ${actionRow}</article>`;
 }

@@ -623,7 +623,7 @@ async function handleAuthorityForm(form, type, values) {
       entry.view="inside";
       authorityState.account=data.account;
       await refreshAuthorityPolls();
-      showToast("Compte connecté. Synchronisation des données entre appareils encore indisponible dans ce pilote.");
+      showToast("Compte connecté. Les données de gestion restent sur cet appareil.");
       render();
       return;
     }

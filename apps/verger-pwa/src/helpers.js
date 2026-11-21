@@ -12,7 +12,7 @@ export function formatDate(value) {
   return match ? `${match[3]}/${match[2]}/${match[1]}` : escapeHtml(value);
 }
 export function heading(title, text) {
-  return `<header class="view-heading"><p class="eyebrow">Le Verger du Numérique · pilote 0.3</p><h1 tabindex="-1">${escapeHtml(title)}</h1><p>${escapeHtml(text)}</p></header>`;
+  return `<header class="view-heading"><p class="eyebrow">Le Verger du Numérique</p><h1 tabindex="-1">${escapeHtml(title)}</h1><p>${escapeHtml(text)}</p></header>`;
 }
 export function empty(text) { return `<p class="empty">${escapeHtml(text)}</p>`; }
 export function stat(value, label) { return `<div class="stat"><strong>${value}</strong><span>${escapeHtml(label)}</span></div>`; }
