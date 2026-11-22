@@ -3,7 +3,7 @@ import express from "express";
 import { openAuthorityDatabase } from "./authority-db.js";
 import { createAuthorityPilotApp } from "./authority-pilot.js";
 
-import { sendResetEmail } from "./password-reset.js";
+import { sendResetEmail, sendVergerEmail } from "./password-reset.js";
 
 const resetSender = String(process.env.VERGER_RESET_MAIL_FROM || "").trim();
 const databaseFile = String(process.env.VERGER_AUTH_DB || "");
@@ -22,6 +22,7 @@ if (!path.isAbsolute(databaseFile) || !registrationDomains.length || !nativeOrig
 process.umask(0o077);
 const db = openAuthorityDatabase(databaseFile);
 const app = createAuthorityPilotApp({ db, registrationDomains, allowedOrigins, nativeOrigins,
+  deliverMail: resetSender ? delivery => sendVergerEmail(resetSender, delivery) : undefined,
   deliverPasswordReset: resetSender ? delivery => sendResetEmail(resetSender, delivery) : undefined,
 });
 const port = Number(process.env.PORT || 3000);

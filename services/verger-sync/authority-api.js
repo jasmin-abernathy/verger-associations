@@ -1,7 +1,10 @@
+import { transaction } from "./authority-db.js";
 import express from "express";
 import { startDomainVerification, completeDomainVerification } from "./organization-registration.js";
 import {
   acceptInvitation,
+  AuthorityError,
+  updateAccountProfile,
   accountFromSessionToken,
   authenticateAccount,
   cancelPoll,
@@ -23,12 +26,27 @@ import { publicOrganization, requestAccess, listAccessRequests, decideAccessRequ
 import { requestPasswordReset, resetPassword } from "./password-reset.js";
 
 function organizationProfile(db, account) {
-  return db.prepare("SELECT id, name, COALESCE(description, '') AS description FROM organizations WHERE id = ?").get(account.organizationId);
+  const profile = db.prepare(`SELECT id, name, domain, COALESCE(description, '') AS description,
+    logo_data_url AS logoDataUrl, join_code AS joinCode FROM organizations WHERE id = ?`).get(account.organizationId);
+  if (account.role !== "administrator") delete profile.joinCode;
+  return profile;
 }
 
 const COOKIE = "verger_session";
 
-export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins = [], nativeOrigins = [], dnsResolver, fileReader, deliverPasswordReset }) {
+export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins = [], nativeOrigins = [], dnsResolver, fileReader, deliverPasswordReset, deliverMail }) {
+  async function sendMail(delivery) {
+    if (!deliverMail) return false;
+    try { await deliverMail(delivery); return true; }
+    catch { console.error("Verger transactional email delivery failed"); return false; }
+  }
+
+  async function deliverInvitation(invitation, email) {
+    return sendMail({ email, subject: "Votre code de connexion", text:
+      "Dans Verger Associations, ouvrez « J’ai reçu un code de connexion », puis collez ce code :\r\n\r\n" +
+      invitation.token + "\r\n\r\nIl est valable 7 jours et utilisable une seule fois." });
+  }
+
   const mutationOrigins = [...new Set([...allowedOrigins, ...nativeOrigins])];
   // Limitation par IP plutôt que par domaine : un tiers ne doit pas pouvoir
   // saturer les défis d'une association et bloquer le propriétaire du DNS.
@@ -71,6 +89,20 @@ export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins
     }
     next();
   });
+  app.patch("/api/v1/organization/logo", withSession(db), express.json({ limit: "340kb" }), (request, response, next) => {
+    try {
+      if (request.account.role !== "administrator") throw new AuthorityError(403, "forbidden", "Modification réservée à la présidence.");
+      const { logoDataUrl, onlyIfMissing } = request.body || {};
+      if (typeof logoDataUrl !== "string" || logoDataUrl.length > 320000 ||
+          (logoDataUrl && !/^data:image\/webp;base64,[A-Za-z0-9+/]+={0,2}$/.test(logoDataUrl))) {
+        throw new AuthorityError(400, "invalid_logo", "Logo WebP invalide ou trop volumineux.");
+      }
+      db.prepare("UPDATE organizations SET logo_data_url = ? WHERE id = ? AND (? = 0 OR logo_data_url IS NULL)")
+        .run(logoDataUrl, request.account.organizationId, onlyIfMissing === true ? 1 : 0);
+      response.json({ organization: organizationProfile(db, request.account) });
+    } catch (error) { next(error); }
+  });
+
   app.use("/api/v1", express.json({ limit: "64kb" }));
 
   app.post("/api/v1/organizations/verification/start", (request, response, next) => {
@@ -102,15 +134,23 @@ export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins
       }
       requestLimits.set(ip, entry);
       if(requestLimits.size>10000)for(const [key,value] of requestLimits)if(value.until < time)requestLimits.delete(key);
-      response.status(202).json(requestAccess(db, request.body || {}));
+      const { administrators } = requestAccess(db, request.body || {});
+      response.status(202).json({ accepted: true });
+      for (const { email } of administrators || []) {
+        void sendMail({ email, subject: "Nouvelle demande d'acces",
+          text: "Une personne a demandé à rejoindre votre espace. Pour consulter la demande, ouvrez Administration → Demandes d’accès dans Verger Associations." });
+      }
     } catch (error) { next(error); }
   });
   app.get("/api/v1/access-requests", withSession(db), (request, response, next) => {
     try { response.json({requests:listAccessRequests(db,request.account)}); }
     catch (error) { next(error); }
   });
-  app.post("/api/v1/access-requests/:id/approve", withSession(db), (request, response, next) => {
-    try { response.json(decideAccessRequest(db,request.account,request.params.id,true)); }
+  app.post("/api/v1/access-requests/:id/approve", withSession(db), async (request, response, next) => {
+    try {
+      const approval = decideAccessRequest(db, request.account, request.params.id, true);
+      response.json({ ...approval, emailed: await deliverInvitation(approval.invitation, approval.email) });
+    }
     catch(error){next(error);}
   });
   app.post("/api/v1/access-requests/:id/reject", withSession(db), (request, response, next) => {
@@ -202,28 +242,39 @@ export function mountAuthorityApi(app, { db, cookieSecure = true, allowedOrigins
     response.json({ account: request.account, organization: organizationProfile(db, request.account) });
   });
 
-  app.post("/api/v1/invitations", withSession(db), (request, response, next) => {
+  app.patch("/api/v1/account/profile", withSession(db), (request, response, next) => {
+    try { response.json({ account: updateAccountProfile(db, request.account, request.body || {}) }); }
+    catch (error) { next(error); }
+  });
+
+  app.post("/api/v1/invitations", withSession(db), async (request, response, next) => {
     try {
-      const invitation = createInvitation(db, request.account, request.body || {});
-      response.status(201).json(invitation);
+      const { email, role, memberId } = request.body || {};
+      const invitation = transaction(db, () => createInvitation(db, request.account, { email, role, memberId }));
+      const emailed = await deliverInvitation(invitation, String(email).trim().toLowerCase());
+      response.status(201).json({ ...invitation, emailed });
     } catch (error) { next(error); }
   });
 
   app.post("/api/v1/invitations/accept", (request, response, next) => {
     try {
-      const account = acceptInvitation(db, request.body || {});
-      const session = createSession(db, account);
+      if (challengeRateLimited(request, "invitation")) {
+        return response.status(429).json({ error: "rate_limited", message: "Trop de tentatives. Réessayez plus tard." });
+      }
+      const { account, session } = acceptInvitation(db, { ...request.body, createLoginSession: true });
       setSessionCookie(response, session.token, session.expiresAt, cookieSecure);
-      const organization = db.prepare("SELECT id, name, domain FROM organizations WHERE id = ?").get(account.organizationId);
+      const organization = organizationProfile(db, account);
       response.status(201).json({ account, organization });
     } catch (error) { next(error); }
   });
 
   app.post("/api/v1/native/invitations/accept", requireNativeOrigin(nativeOrigins), (request, response, next) => {
     try {
-      const account = acceptInvitation(db, request.body || {});
-      const session = createSession(db, account);
-      const organization = db.prepare("SELECT id, name, domain FROM organizations WHERE id = ?").get(account.organizationId);
+      if (challengeRateLimited(request, "invitation")) {
+        return response.status(429).json({ error: "rate_limited", message: "Trop de tentatives. Réessayez plus tard." });
+      }
+      const { account, session } = acceptInvitation(db, { ...request.body, createLoginSession: true });
+      const organization = organizationProfile(db, account);
       response.status(201).json({ account, organization, sessionToken: session.token, expiresAt: session.expiresAt });
     } catch (error) { next(error); }
   });

@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -112,11 +113,14 @@ export function migrateAuthorityDatabase(db) {
   const columns = db.prepare("PRAGMA table_info(organizations)").all().map(row => row.name);
   for (const [name, type] of [
     ["domain", "TEXT"], ["domain_verified_at", "TEXT"],
-    ["description", "TEXT"], ["theme_color", "TEXT"], ["modules_json", "TEXT"]
+    ["description", "TEXT"], ["theme_color", "TEXT"], ["modules_json", "TEXT"], ["join_code", "TEXT"], ["logo_data_url", "TEXT"]
   ]) {
     if (!columns.includes(name)) db.exec(`ALTER TABLE organizations ADD COLUMN ${name} ${type}`);
   }
+  const accountColumns = db.prepare("PRAGMA table_info(accounts)").all().map(row => row.name);
+  if (!accountColumns.includes("display_name")) db.exec("ALTER TABLE accounts ADD COLUMN display_name TEXT NOT NULL DEFAULT ''");
   db.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_organizations_join_code ON organizations(join_code);
     CREATE UNIQUE INDEX IF NOT EXISTS idx_organizations_domain_unique ON organizations(domain);
     CREATE TABLE IF NOT EXISTS domain_verifications (
       id TEXT PRIMARY KEY,
@@ -140,6 +144,19 @@ export function migrateAuthorityDatabase(db) {
     ) STRICT;
     CREATE INDEX IF NOT EXISTS idx_access_requests_org_status ON access_requests(organization_id, status, created_at);
   `);
+  transaction(db, () => {
+    for (const { id } of db.prepare("SELECT id FROM organizations WHERE join_code IS NULL").all()) {
+      assignOrganizationCode(db, id);
+    }
+  });
+}
+
+export function assignOrganizationCode(db, organizationId) {
+  const update = db.prepare("UPDATE OR IGNORE organizations SET join_code = ? WHERE id = ? AND join_code IS NULL");
+  const current = db.prepare("SELECT join_code FROM organizations WHERE id = ?");
+  while (!current.get(organizationId).join_code) {
+    update.run(randomBytes(6).toString("hex").toUpperCase(), organizationId);
+  }
 }
 
 export function transaction(db, callback) {

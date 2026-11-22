@@ -5,7 +5,7 @@ import { renderIdeas, renderResources, renderAttendance, renderVolunteers } from
 import { MODULES, DEFAULT_MODULES } from "./setup.js";
 
 export function renderView(name, state, context) {
-  const renderers = { dashboard, members, welcome, meetings, decisions, actions, events, volunteers, help, ideas: renderIdeas, resources: renderResources, consultations, chat, more, admin, settings };
+  const renderers = { dashboard, members, welcome, meetings, decisions, actions, events, volunteers, help, ideas: renderIdeas, resources: renderResources, consultations, chat, more, admin, settings, profile };
   if (["members", "welcome", "settings"].includes(name) && (context.authority?.account?.role !== "administrator" || context.authority.account.organizationId !== state.organization?.id)) {
     return heading("Accès réservé", "Cette page est réservée aux responsables de l'association.");
   }
@@ -17,17 +17,19 @@ function dashboard(state, context) {
   const nextActions = activeRecords(state.actions).filter((item) => !item.done).slice(0, 5);
   return `${heading("Accueil", "Une vue simple de ce qui demande de l’attention.")}
     ${context.setupNeeded ? '<article class="card"><h2>Votre association n’est pas encore vérifiée</h2><p>Explorez en local ou configurez votre espace avec vérification DNS.</p><button type="button" data-action="setup-resume">Configurer mon association</button></article>' : ""}
+    ${context.authority?.account?.needsPassword ? '<article class="card"><p>Choisissez votre nom et un mot de passe pour vos prochaines connexions.</p><button type="button" data-action="open-view" data-view="profile">Personnaliser mon profil</button></article>' : ""}
+    ${accessNotice(context)}
     <div class="stats">${stat(c.members,"membres")}${stat(c.meetings,"réunions")}${stat(c.decisions,"décisions")}${stat(c.openActions,"actions ouvertes")}${stat(c.events,"événements")}${stat(c.volunteerNeeds,"besoins bénévoles")}</div>
     <div class="grid-2"><article class="card"><h2>À faire</h2>${nextActions.length ? `<ul class="clean-list">${nextActions.map(actionRow).join("")}</ul>` : empty("Aucune action ouverte.")}</article>
     <article class="card"><h2>Principe du Verger</h2><p>Les données sont enregistrées d’abord sur cet appareil. La connexion sert à synchroniser, pas à rendre l’application utilisable.</p><p class="muted">Aucun compte externe, aucune publicité, aucune télémétrie.</p></article></div>`;
 }
 
-function members(state) {
+function members(state, context) {
   const list = activeRecords(state.members);
   const archived = archivedRecords(state.members);
-  return `${heading("Membres", "Un annuaire minimal avant de définir des permissions plus fines.")}
+  return `${heading("Membres", "Ajoutez une fiche et envoyez son code de première connexion.")}
     <div class="grid-2"><article class="card"><h2>Membres actifs</h2>${list.length ? `<div class="stack">${list.map((m) => `<article class="subcard"><form data-form="member-edit" data-id="${e(m.id)}" class="form"><label>Nom<input name="name" required maxlength="120" value="${e(m.name)}"></label><label>Rôle<input name="role" maxlength="120" value="${e(m.role || "Membre")}"></label><label>Contact facultatif<input name="contact" maxlength="180" value="${e(m.contact || "")}"></label><div class="button-row"><button>Enregistrer</button><button type="button" class="secondary" data-action="archive-item" data-collection="members" data-id="${e(m.id)}" data-archived="true">Archiver</button></div></form></article>`).join("")}</div>` : empty("Aucun membre.")}${archivedList("Membres archivés", archived, "members", (m) => m.name)}</article>
-    <article class="card"><h2>Ajouter</h2><form data-form="member" class="form"><label>Nom<input name="name" required maxlength="120"></label><label>Rôle<input name="role" maxlength="120" value="Membre"></label><label>Contact facultatif<input name="contact" maxlength="180"></label><button>Ajouter le membre</button></form></article></div>`;
+    <article class="card"><h2>Ajouter un membre</h2><form data-form="member" class="form"><label>Nom<input name="name" required maxlength="120"></label><label>Rôle<select name="role">${Object.entries(accountRoleLabels).map(([role,label]) => `<option value="${e(role)}"${role === "member" ? " selected" : ""}>${e(label)}</option>`).join("")}</select></label><label>Adresse e-mail<input name="email" type="email" autocomplete="email" required maxlength="180"></label><button>Ajouter et envoyer le code</button></form>${invitationNotice(context.authority?.memberInvitation)}</article></div>`;
 }
 
 function welcome(state) {
@@ -45,9 +47,10 @@ function meetings(state) {
     <div class="stack">${list.length ? list.map(meetingCard).join("") : empty("Aucune réunion pour le moment.")}</div>`;
 }
 
-function decisions(state) {
+function decisions(state, context) {
   const list = activeRecords(state.meetings).flatMap((meeting) => activeRecords(meeting.proposals || {}).filter((p) => ["accepted","rejected"].includes(p.status)).map((proposal) => ({ meeting, proposal })));
-  return `${heading("Décisions", "Chaque décision reste reliée à sa réunion et à sa proposition.")}${list.length ? `<div class="stack">${list.map(({meeting,proposal}) => `<article class="card"><div class="card-head"><div><h2>${e(proposal.title)}</h2><p class="muted">${e(meeting.title)} · ${formatDate(meeting.date)}</p></div><span class="badge status-${e(proposal.status)}">${proposal.status === "accepted" ? "Adoptée" : "Rejetée"}</span></div><p><strong>Méthode :</strong> ${e(DECISION_METHODS[proposal.decisionMethod] || "Autre")}</p>${proposal.decisionText ? `<p>${e(proposal.decisionText)}</p>` : `<p class="warning">Formulation finale à compléter.</p>`}</article>`).join("")}</div>` : empty("Aucune décision enregistrée.")}`;
+  return `${heading("Décisions", "Chaque décision reste reliée à sa réunion et à sa proposition.")}${(state.organization?.modules || DEFAULT_MODULES).includes("meetings") ? `<article class="card"><p>Dans <strong>Réunions</strong>, ouvrez ou créez une réunion et ajoutez une proposition. Choisissez ensuite l’état <strong>Adoptée</strong> ou <strong>Rejetée</strong>, puis cliquez sur <strong>Enregistrer la décision</strong>.</p><button type="button" data-action="open-view" data-view="meetings">Ouvrir les réunions</button></article>` : `<article class="card"><p>Les décisions sont enregistrées dans les réunions. Le module Réunions doit être activé dans les réglages de l’association.</p>${context.authority?.account?.role === "administrator" ? '<button type="button" data-action="open-view" data-view="settings">Ouvrir les réglages</button>' : ""}</article>`}
+    ${list.length ? `<div class="stack">${list.map(({meeting,proposal}) => `<article class="card"><div class="card-head"><div><h2>${e(proposal.title)}</h2><p class="muted">${e(meeting.title)} · ${formatDate(meeting.date)}</p></div><span class="badge status-${e(proposal.status)}">${proposal.status === "accepted" ? "Adoptée" : "Rejetée"}</span></div><p><strong>Méthode :</strong> ${e(DECISION_METHODS[proposal.decisionMethod] || "Autre")}</p>${proposal.decisionText ? `<p>${e(proposal.decisionText)}</p>` : `<p class="warning">Formulation finale à compléter.</p>`}</article>`).join("")}</div>` : empty("Aucune décision enregistrée.")}`;
 }
 
 function actions(state) {
@@ -116,8 +119,7 @@ function consultations(state, context) {
           <p class="muted">Le rôle a déjà été choisi par l’administrateur qui a créé l’invitation.</p>
           <form data-form="account-accept-invite" class="form">
             <label>Code d’invitation<input name="token" required autocomplete="off" value="${e(authority.inviteToken || "")}"></label>
-            <label>Choisir un mot de passe<input name="password" type="password" autocomplete="new-password" required minlength="12"></label>
-            <button>Créer mon compte</button>
+            <button>Ouvrir mon espace</button>
           </form>
         </article>
       </div>
@@ -147,14 +149,14 @@ function pollHome(state, authority, canCreate) {
         <div class="card-head"><div><h2>Consultations</h2><p class="muted">Les consultations ouvertes apparaissent en premier.</p></div>${canCreate ? '<button type="button" class="secondary" data-action="toggle-poll-create">Créer</button>' : ""}</div>
         ${polls.length ? `<div class="poll-list">${polls.map(pollListItem).join("")}</div>` : empty("Aucune consultation vérifiée.")}
       </article>
-      ${authority.account?.role === "administrator" ? `<article class="card"><details><summary>Inviter un compte</summary>
+      ${authority.account?.role === "administrator" ? `<article class="card"><details ${authority.accountInvitation ? "open" : ""}><summary>Inviter un compte</summary>
         <form data-form="account-invite" class="form">
           <label>E-mail<input name="email" type="email" required maxlength="254"></label>
           <label>Rôle<select name="role"><option value="member">Membre</option><option value="facilitator">Animateur</option><option value="reader">Lecteur</option><option value="administrator">Administrateur</option></select></label>
           <label>Fiche membre associée <span class="muted">(facultatif)</span><select name="memberId"><option value="">Aucune</option>${members.map((member) => `<option value="${e(member.id)}">${e(member.name)}</option>`).join("")}</select></label>
           <button>Créer le code d’invitation</button>
         </form>
-        ${authority.invitationCode ? `<div class="invitation-code"><strong>Code à transmettre</strong><code>${e(authority.invitationCode)}</code><button type="button" class="secondary" data-action="copy-invitation-code" data-code="${e(authority.invitationCode)}">Copier</button></div>` : ""}
+        ${invitationNotice(authority.accountInvitation)}
       </details></article>` : ""}
     </section>
     ${canCreate ? `<aside class="card poll-create-panel" data-poll-create hidden>
@@ -287,7 +289,7 @@ function more(state, context) {
   const isAdmin = context.authority?.account?.role === "administrator" && context.authority.account.organizationId === state.organization?.id;
   return `${heading("Tous les modules", "Naviguez sans faire défiler une longue barre horizontale.")}
     <div class="module-grid">${available.map(([id,title]) => `<article class="card"><h2>${e(title)}</h2><button type="button" data-action="open-view" data-view="${e(id)}">Ouvrir</button></article>`).join("")}
-    <article class="card"><h2>${isAdmin ? "Administration" : "Espace responsable"}</h2><button type="button" data-action="open-view" data-view="admin">${isAdmin ? "Gérer l’association" : "Se connecter"}</button></article></div>`;
+    <article class="card"><h2>${isAdmin ? "Administration" : "Espace responsable"}</h2><button type="button" data-action="open-view" data-view="admin">${isAdmin ? "Gérer l’association" : "Se connecter"}</button></article>${context.authority?.account ? '<article class="card"><h2>Mon profil</h2><button type="button" data-action="open-view" data-view="profile">Ouvrir mon profil</button></article>' : ""}</div>`;
 }
 
 function admin(state, context) {
@@ -311,9 +313,10 @@ function admin(state, context) {
       <article class="card"><h2>Accueil des nouveaux</h2><p>Suivre l’intégration des membres.</p><button type="button" data-action="open-view" data-view="welcome">Voir les suivis</button></article>
       <article class="card"><h2>Paramètres</h2><p>Modules, couleurs, sauvegarde et serveur.</p><button type="button" data-action="open-view" data-view="settings">Ouvrir les réglages</button></article>
     </div>
-    <article class="card"><h2>Demandes d’accès</h2>
+    ${context.authority?.organization?.joinCode ? `<article class="card"><h2>Code de l’association</h2><p>Transmettez ce code fixe aux personnes qui souhaitent demander un accès.</p><div class="button-row"><code>${e(context.authority.organization.joinCode)}</code><button class="secondary" type="button" data-action="copy-association-code">Copier le code</button></div></article>` : ""}
+    <article class="card"><h2>Demandes d’accès${requests.length ? ` (${requests.length})` : ""}</h2>
       <p class="muted">Seule la présidence peut les valider. L’adresse e-mail déclarée par la personne n’est pas vérifiée automatiquement.</p>
-      ${approval ? `<p role="status">Invitation pour <strong>${e(approval.email)}</strong> (${e(approval.role === "facilitator" ? "Bureau / fondateurs" : "Bénévoles")}) : <code>${e(approval.token)}</code></p><button type="button" data-action="copy-invitation-code" data-code="${e(approval.token)}">Copier le code à transmettre</button>` : ""}
+      ${invitationNotice(approval)}
       ${requests.length ? `<div class="stack">${requests.map(req=>`<div class="subcard"><p><strong>${e(req.email)}</strong> — ${e(req.role === "facilitator" ? "Bureau / fondateurs" : "Bénévoles")}</p>${req.message ? `<p>${e(req.message)}</p>` : ""}<div class="button-row"><form data-form="access-approve"><input type="hidden" name="requestId" value="${e(req.id)}"><button>Approuver</button></form><form data-form="access-reject"><input type="hidden" name="requestId" value="${e(req.id)}"><button class="secondary">Refuser</button></form></div></div>`).join("")}</div>` : '<p>Aucune demande en attente.</p>'}
     </article>
     <p class="warning">Les comptes et consultations sont gérés par le serveur. Les données de gestion restent sur cet appareil sans synchronisation configurée.</p>`;
@@ -326,7 +329,7 @@ function settings(state, context) {
       <article class="card"><h2>Personnalisation</h2><form data-form="modules" class="form">
         <label>Couleur principale (nuances automatiques)<input name="themeColor" type="color" value="${e(state.organization.themeColor || "#315f3a")}"></label>
         <label>Logo (PNG, JPEG ou WebP)<input name="logo" type="file" accept="image/png,image/jpeg,image/webp"></label>
-        ${state.organization.logoDataUrl ? `<label class="module-choice"><input name="removeLogo" type="checkbox">Retirer le logo actuel</label>` : ""}
+        ${/^data:image\/webp;base64,/.test(state.organization.logoDataUrl || "") ? `<img class="setup-logo-preview" src="${e(state.organization.logoDataUrl)}" alt="Logo actuel"><label class="module-choice"><input name="removeLogo" type="checkbox">Retirer le logo actuel</label>` : ""}
         <fieldset class="setup-modules"><legend>Modules activés</legend>${MODULES.map(([id,title]) => `<label class="module-choice"><input type="checkbox" name="module" value="${e(id)}" ${(state.organization.modules || DEFAULT_MODULES).includes(id) ? "checked" : ""}><span>${e(title)}</span></label>`).join("")}</fieldset>
         <button>Enregistrer</button></form>
         <p class="muted">Domaine : <strong>${e(state.organization.domain || "Non vérifié")}</strong></p></article>
@@ -390,5 +393,39 @@ function chat(_state, context) {
     <article class="card"><h2>${link ? "Modifier le lien" : "Associer un groupe"}</h2>
       <form data-form="simplex-settings" class="form"><label>Lien d’invitation SimpleX<input name="link" type="url" inputmode="url" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="16384" placeholder="https://simplex.chat/…" value="${e(link)}" aria-describedby="simplex-storage"></label>
       <p id="simplex-storage" class="muted">Conservé uniquement sur cet appareil, pour cet espace Verger. Ce lien privé n’est ni synchronisé ni inclus dans les exports. Videz le champ puis enregistrez pour le retirer ; cela ne quitte pas le groupe SimpleX.</p><button>Enregistrer le lien</button></form>
+    </article>`;
+}
+
+export const accountRoleLabels = {
+  member: "Membre / bénévole",
+  facilitator: "Bureau / fondateurs",
+  reader: "Lecteur",
+  administrator: "Présidence / coprésidence",
+};
+
+function invitationNotice(invitation) {
+  if (!invitation) return "";
+  return `<div class="invitation-code" role="status"><strong>${invitation.emailed ? "Code envoyé" : "E-mail indisponible · code à transmettre"} à ${e(invitation.email)}</strong><code>${e(invitation.token)}</code><button type="button" class="secondary" data-action="copy-invitation-code" data-code="${e(invitation.token)}">Copier le code</button></div>`;
+}
+
+function accessNotice(context) {
+  const count = context.authority?.accessRequests?.length;
+  if (!count) return "";
+  return `<article class="card"><p>${count} demande${count === 1 ? "" : "s"} d’accès en attente.</p><button type="button" data-action="open-view" data-view="admin">Voir les demandes</button></article>`;
+}
+
+function profile(_state, { authority }) {
+  const account = authority.account;
+  if (!account) return "";
+  return `${heading("Mon profil", "Personnalisez votre espace et vos identifiants.")}
+    <article class="card"><p>${e(account.email)} · ${e(accountRoleLabels[account.role])}</p>
+      <form class="form" data-form="account-profile">
+        <label>Nom affiché<input name="displayName" autocomplete="name" maxlength="120" required value="${e(account.displayName || "")}"></label>
+        ${account.needsPassword ? "" : '<label>Mot de passe actuel (pour le modifier)<input type="password" name="currentPassword" maxlength="1024" autocomplete="current-password"></label>'}
+        <label>${account.needsPassword ? "Choisissez un mot de passe pour les prochaines connexions" : "Nouveau mot de passe (facultatif)"}<input name="password" type="password" autocomplete="new-password" minlength="12" maxlength="1024" ${account.needsPassword ? "required" : ""}></label>
+        <button>Enregistrer mon profil</button>
+      </form>
+      ${authority.error ? `<p role="alert" class="warning">${e(authority.error)}</p>` : ""}
+      <button type="button" class="secondary" data-action="account-logout">Se déconnecter</button>
     </article>`;
 }

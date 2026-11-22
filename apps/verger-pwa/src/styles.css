@@ -283,3 +283,11 @@ html[data-entry="true"] .app-shell,html[data-setup="true"] .app-shell {display:b
 .entry-choice:hover,.entry-choice:focus-visible{background:var(--surface-2)}
 .entry-choice strong{font-size:1.13rem}.entry-choice span{font-size:.9rem;color:var(--muted);font-weight:400}
 .entry-form{max-width:42rem;margin:0 auto}.entry-actions{display:flex;flex-wrap:wrap;gap:.65rem;margin-top:1rem}
+
+.brand img.association-logo {
+  width: 52px;
+  height: 52px;
+  padding: .2rem;
+  background: #fff;
+  flex-shrink: 0;
+}

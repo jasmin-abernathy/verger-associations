@@ -14,7 +14,7 @@ export function publicOrganization(db, rawDomain) {
   if (!row) fail(404, "organization_not_found", "Association introuvable ou non vérifiée");
   return row;
 }
-export function requestAccess(db, { domain, email, role, message = "" }) {
+export function requestAccess(db, { domain, joinCode, email, role, message = "" }) {
   const requestedRole = String(role || "");
   if (!validRoles.has(requestedRole)) fail(400, "invalid_role", "Sélectionnez Bénévoles ou Bureau / fondateurs");
   const cleanedEmail = String(email || "").trim().toLowerCase();
@@ -24,17 +24,29 @@ export function requestAccess(db, { domain, email, role, message = "" }) {
   const cleanMessage = String(message || "").trim();
   if (cleanMessage.length > 1000) fail(400, "invalid_message", "Message trop long (1 000 caractères maximum)");
   let org;
-  try { org = publicOrganization(db, domain); }
-  catch (err) { if (err?.code === "organization_not_found") return { accepted: true }; throw err; }
-  // Avoid multiplying requests from an unchecked email address.
-  const existing = db.prepare("SELECT id FROM access_requests WHERE organization_id = ? AND email = ? AND status = 'pending'").get(org.id, cleanedEmail);
-  if (!existing) {
+  if (joinCode !== undefined) {
+    const code = String(joinCode).trim().toUpperCase().replace(/[\s-]/g, "");
+    if (!/^[0-9A-F]{12}$/.test(code)) fail(400, "invalid_join_code", "Saisissez les 12 caractères du code de l’association.");
+    org = db.prepare("SELECT id, name FROM organizations WHERE join_code = ? AND domain_verified_at IS NOT NULL").get(code);
+    if (!org) fail(404, "invalid_join_code", "Code d’association introuvable. Vérifiez-le auprès des responsables.");
+  } else {
+    try { org = publicOrganization(db, domain); }
+    catch (err) { if (err?.code === "organization_not_found") return { accepted: true }; throw err; }
+  }
+  // A duplicate pending request must not send another notification.
+  return transaction(db, () => {
+    const existing = db.prepare(`SELECT 1 FROM access_requests
+      WHERE organization_id = ? AND email = ? AND status = 'pending'`).get(org.id, cleanedEmail);
+    const account = db.prepare("SELECT 1 FROM accounts WHERE organization_id = ? AND email = ?").get(org.id, cleanedEmail);
+    if (existing || account) return { accepted: true };
     db.prepare("INSERT INTO access_requests (id, organization_id, email, role, message, created_at) VALUES (?, ?, ?, ?, ?, ?)")
       .run(randomUUID(), org.id, cleanedEmail, requestedRole, cleanMessage, new Date().toISOString());
-  }
-  // Identical response whether org exists, request is duplicate, or just recorded.
-  return { accepted: true };
+    const administrators = db.prepare(`SELECT email FROM accounts
+      WHERE organization_id = ? AND role = 'administrator' AND active = 1`).all(org.id);
+    return { accepted: true, administrators };
+  });
 }
+
 export function listAccessRequests(db, actor) {
   administrator(actor);
   return db.prepare("SELECT id, email, role, message, created_at FROM access_requests WHERE organization_id = ? AND status = 'pending' ORDER BY created_at DESC LIMIT 100")

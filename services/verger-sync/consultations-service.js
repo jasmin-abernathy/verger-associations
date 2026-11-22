@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { ACCOUNT_ROLES, POLL_VISIBILITIES, transaction } from "./authority-db.js";
+import { ACCOUNT_ROLES, POLL_VISIBILITIES, assignOrganizationCode, transaction } from "./authority-db.js";
 import { hashPassword, hashSecret, randomSecret, verifyPassword } from "./authority-security.js";
 
 export class AuthorityError extends Error {
@@ -53,6 +53,7 @@ export function createOrganization(db, { id = randomUUID(), name }) {
   if (!cleanName) fail(400, "invalid_organization", "Nom d’organisation obligatoire");
   db.prepare("INSERT INTO organizations (id, name, created_at) VALUES (?, ?, ?)")
     .run(String(id), cleanName.slice(0, 180), nowIso());
+  assignOrganizationCode(db, String(id));
   return String(id);
 }
 
@@ -63,6 +64,7 @@ export function createAccount(db, {
   role,
   memberId = null,
   id = randomUUID(),
+  invitationOnly = false,
 }) {
   requireRole(role);
   const org = db.prepare("SELECT id FROM organizations WHERE id = ?").get(String(organizationId));
@@ -75,7 +77,7 @@ export function createAccount(db, {
         String(id),
         String(organizationId),
         cleanEmail(email),
-        hashPassword(password),
+        invitationOnly ? "invitation-only" : hashPassword(password),
         role,
         memberId ? String(memberId) : null,
         nowIso(),
@@ -88,7 +90,7 @@ export function createAccount(db, {
 }
 
 export function getAccountById(db, id) {
-  const row = db.prepare(`SELECT id, organization_id, email, role, member_id, active, created_at
+  const row = db.prepare(`SELECT id, organization_id, email, role, member_id, active, created_at, display_name, password_hash
     FROM accounts WHERE id = ?`).get(String(id));
   return row ? mapAccount(row) : null;
 }
@@ -115,7 +117,7 @@ export function createSession(db, account, { ttlMs = 1000 * 60 * 60 * 24 * 30 } 
 
 export function accountFromSessionToken(db, token) {
   if (!token) return null;
-  const row = db.prepare(`SELECT a.id, a.organization_id, a.email, a.role, a.member_id, a.active, a.created_at
+  const row = db.prepare(`SELECT a.id, a.organization_id, a.email, a.role, a.member_id, a.active, a.created_at, a.display_name, a.password_hash
     FROM sessions s
     JOIN accounts a ON a.id = s.account_id
     WHERE s.token_hash = ? AND s.expires_at > ? AND a.active = 1`)
@@ -137,10 +139,18 @@ export function createInvitation(db, actor, {
   requireActor(actor);
   if (actor.role !== "administrator") fail(403, "forbidden", "Seul un administrateur peut inviter des comptes");
   requireRole(role);
+  email = cleanEmail(email);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) fail(400, "invalid_email", "Adresse e-mail invalide");
+  if (db.prepare("SELECT 1 FROM accounts WHERE organization_id = ? AND email = ?").get(actor.organizationId, email)) {
+    fail(409, "account_exists", "Un compte existe déjà pour cette adresse");
+  }
   const token = randomSecret(32);
   const id = randomUUID();
   const createdAt = nowIso();
   const expiresAt = new Date(Date.now() + ttlMs).toISOString();
+  // Reissuing an invitation invalidates earlier codes for the same address.
+  db.prepare("UPDATE invitations SET used_at = ? WHERE organization_id = ? AND email = ? AND used_at IS NULL")
+    .run(createdAt, actor.organizationId, email);
   db.prepare(`INSERT INTO invitations
     (id, organization_id, created_by_account_id, email, role, member_id, token_hash, expires_at, used_at, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?)`)
@@ -159,14 +169,21 @@ export function createInvitation(db, actor, {
   return { id, token, expiresAt, role };
 }
 
-export function acceptInvitation(db, { token, password }) {
+export function acceptInvitation(db, { token, password, organizationId, createLoginSession = false }) {
   return transaction(db, () => {
     const invitation = db.prepare(`SELECT * FROM invitations
       WHERE token_hash = ? AND used_at IS NULL AND expires_at > ?`)
-      .get(hashSecret(token), nowIso());
+      .get(hashSecret(String(token || "").trim()), nowIso());
     if (!invitation) fail(404, "invitation_invalid", "Invitation invalide ou expirée");
+    if (organizationId && invitation.organization_id !== organizationId) {
+      fail(409, "different_organization", "Ce code appartient à une autre association que celle de cet appareil.");
+    }
+    if (password !== undefined && (typeof password !== "string" || password.length < 12 || password.length > 1024)) {
+      fail(400, "invalid_password", "Le mot de passe doit contenir entre 12 et 1 024 caractères");
+    }
     const account = createAccount(db, {
       organizationId: invitation.organization_id,
+      invitationOnly: password === undefined,
       email: invitation.email,
       password,
       role: invitation.role,
@@ -174,8 +191,27 @@ export function acceptInvitation(db, { token, password }) {
     });
     db.prepare("UPDATE invitations SET used_at = ? WHERE id = ?").run(nowIso(), invitation.id);
     audit(db, account, "invitation.accepted", "invitation", invitation.id, { organizationId: account.organizationId });
-    return account;
+    return createLoginSession ? { account, session: createSession(db, account) } : account;
   });
+}
+
+export function updateAccountProfile(db, account, { displayName, password, currentPassword }) {
+  const name = typeof displayName === "string" ? displayName.trim() : "";
+  if (!name || name.length > 120) fail(400, "invalid_name", "Saisissez un nom de 120 caractères maximum.");
+  const { password_hash: existingHash } = db.prepare("SELECT password_hash FROM accounts WHERE id = ?").get(account.id);
+  let hash = existingHash;
+  if (password || account.needsPassword) {
+    if (typeof password !== "string" || password.length < 12 || password.length > 1024) {
+      fail(400, "invalid_password", "Le mot de passe doit contenir entre 12 et 1 024 caractères");
+    }
+    if (!account.needsPassword && !verifyPassword(currentPassword, existingHash)) {
+      fail(401, "invalid_credentials", "Le mot de passe actuel est incorrect.");
+    }
+    hash = hashPassword(password);
+  }
+  db.prepare("UPDATE accounts SET display_name = ?, password_hash = ? WHERE id = ? AND password_hash = ?")
+    .run(name, hash, account.id, existingHash);
+  return getAccountById(db, account.id);
 }
 
 export function createPoll(db, actor, {
@@ -433,6 +469,8 @@ function mapAccount(row) {
     email: row.email,
     role: row.role,
     memberId: row.member_id || null,
+    displayName: row.display_name || "",
+    needsPassword: row.password_hash === "invitation-only",
     active: Boolean(row.active),
     createdAt: row.created_at,
   };

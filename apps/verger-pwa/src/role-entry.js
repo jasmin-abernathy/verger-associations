@@ -17,10 +17,10 @@ export function renderRoleEntry(state, { apiUrl = "", error = "", loading = fals
   if (state.view === "choices") {
     return title + '<section class="entry-choices" aria-label="Choisir votre accès">' +
       ENTRY_ROLES.map(role => '<button type="button" class="entry-choice" data-action="entry-role" data-role="'+e(role.key)+'"><strong>'+e(role.title)+'</strong><span>'+e(role.detail)+'</span></button>').join("") +
-      '</section>';
+      '</section><div class="entry-actions"><button type="button" data-action="entry-accept">J’ai reçu un code de connexion</button></div>';
   }
   const selected = ENTRY_ROLES.find(r => r.key === state.role) || ENTRY_ROLES[0];
-  const prefix = title + '<article class="card entry-form"><h2>'+e(selected.title)+'</h2>' +
+  const prefix = title + '<article class="card entry-form"><h2>'+e(state.view === 'accept' ? 'Connexion par code' : selected.title)+'</h2>' +
     (error ? '<p role="alert" class="warning">'+e(error)+'</p>' : '') +
     (loading ? '<p class="muted" role="status">Vérification en cours…</p>' : '');
   if (state.view === "presidents") {
@@ -43,14 +43,14 @@ export function renderRoleEntry(state, { apiUrl = "", error = "", loading = fals
   }
   if (state.view === "request") {
     return prefix +
-      (state.requestDone ? '<p role="status">Votre demande a été transmise si l’association dispose d’un espace actif. La présidence devra l’approuver et vous remettre un code d’invitation. Aucun accès n’est accordé automatiquement.</p>' :
-      '<p>La demande est destinée à la présidence de l’association. Elle ne crée pas de compte sans validation.</p><form data-form="entry-request" class="form">'+domain+
+      (state.requestDone ? '<p role="status">Votre demande a été transmise si l’association dispose d’un espace actif. Après validation par la présidence, vous recevrez votre code personnel de connexion.</p>' :
+      '<p>La demande est destinée à la présidence de l’association. Elle ne crée pas de compte sans validation.</p><form data-form="entry-request" class="form"><label>Code de l’association<input name="joinCode" required maxlength="20" autocapitalize="characters" autocomplete="off" spellcheck="false" value="'+e(state.joinCode || '')+'"></label>'+
       '<label>Votre adresse e-mail<input name="email" type="email" autocomplete="email" required maxlength="254" value="'+e(state.email || '')+'"></label>'+
       '<label>Présentation (facultative)<textarea name="message" rows="3" maxlength="1000" placeholder="Quelques mots pour les responsables"></textarea></label><button>Envoyer ma demande</button></form>')+
       '<div class="entry-actions"><button type="button" class="secondary" data-action="entry-login">Déjà un compte ? Se connecter</button>'+home+'</div></article>';
   }
   if (state.view === "accept") {
-    return prefix+'<p>Le code est fourni par la présidence après validation de votre demande. Le rôle est fixé par le serveur.</p><form data-form="entry-accept" class="form"><label>Code d’invitation<input name="token" required autocomplete="off" maxlength="256"></label><label>Choisir un mot de passe<input name="password" type="password" autocomplete="new-password" minlength="12" required></label><button>Activer mon compte</button></form><div class="entry-actions">'+home+'</div></article>';
+    return prefix+'<p>Saisissez le code personnel reçu par e-mail ou transmis par la présidence.</p><form data-form="entry-accept" class="form"><label>Code de connexion<input name="token" required autocomplete="one-time-code" autocapitalize="none" spellcheck="false" maxlength="256"></label><button>Ouvrir mon espace</button></form><div class="entry-actions">'+home+'</div></article>';
   }
   return title;
 }
