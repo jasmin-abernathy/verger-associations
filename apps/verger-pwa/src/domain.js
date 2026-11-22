@@ -79,10 +79,9 @@ export function counts(doc) {
   };
 }
 
-export function addMember(doc, { name, role = "Membre", contact = "" }) {
+export function addMember(doc, { name, role = "Membre", contact = "", id = newId("member") }) {
   const trimmed = String(name || "").trim();
   if (!trimmed) throw new Error("Le nom du membre est obligatoire");
-  const id = newId("member");
   doc.members[id] = {
     id,
     name: trimmed.slice(0, 120),

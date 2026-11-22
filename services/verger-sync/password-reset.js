@@ -9,6 +9,11 @@ const emailPattern = /^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9.-]+\.[a-z]{2,}$/i;
 const invalidReset = () => new AuthorityError(400, "invalid_reset", "Code invalide ou expiré");
 
 export function sendResetEmail(from, { email, code }) {
+  return sendVergerEmail(from, { email, subject: "Code de recuperation", text:
+    "Saisissez ce code dans l'application Verger Associations :\r\n\r\n" + code + "\r\n\r\nCe code expire dans 30 minutes." });
+}
+
+export function sendVergerEmail(from, { email, subject, text }) {
   const sender = String(from || "").trim();
   if (![sender, email].every(address => emailPattern.test(address))) {
     throw new Error("Adresse de récupération invalide");
@@ -20,10 +25,9 @@ export function sendResetEmail(from, { email, code }) {
     });
     child.stdin.on("error", reject);
     child.stdin.end([
-      "From: " + sender, "To: " + email, "Subject: Verger Associations - code de recuperation",
+      "From: " + sender, "To: " + email, "Subject: Verger Associations - " + subject,
       "Content-Type: text/plain; charset=UTF-8", "",
-      "Saisissez ce code dans l'application Verger Associations :",
-      code, "", "Ce code expire dans 30 minutes.", "",
+      text, "",
     ].join("\r\n"));
   });
 }

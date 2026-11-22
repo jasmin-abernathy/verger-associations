@@ -78,9 +78,11 @@ test("A profile change is limited to the signed-in administrator's organization"
     assert.equal((await update(member)).status, 403);
     const response = await update(admin);
     assert.equal(response.status, 200);
-    assert.deepEqual((await response.json()).organization, {
-      id: organizationId, name: "Nouveau nom", description: "Nouvelle description",
-    });
+    const { organization } = await response.json();
+    assert.equal(organization.id, organizationId);
+    assert.equal(organization.name, "Nouveau nom");
+    assert.equal(organization.description, "Nouvelle description");
+    assert.match(organization.joinCode, /^[A-F0-9]{12}$/);
     const session = await fetch(base + "/session", { headers: { Authorization: "Bearer " + member } });
     assert.equal((await session.json()).organization.description, "Nouvelle description");
     assert.equal(db.prepare("SELECT name FROM organizations WHERE id = ?").get(otherId).name, "Autre association");

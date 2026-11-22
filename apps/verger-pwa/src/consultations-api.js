@@ -31,9 +31,9 @@ export async function logout() {
   }
 }
 
-export async function acceptInvitation({ token, password }) {
+export async function acceptInvitation({ token, organizationId }) {
   const path = nativePlatform ? "/native/invitations/accept" : "/invitations/accept";
-  const data = await request(path, { method: "POST", body: { token, password }, authenticated: false });
+  const data = await request(path, { method: "POST", body: { token, organizationId }, authenticated: false });
   if (nativePlatform) nativeSessionToken = String(data.sessionToken || "");
   return data;
 }
@@ -54,8 +54,8 @@ export async function completeDomainRegistration(payload) {
 export function organizationByDomain(domain) {
   return request("/organizations/by-domain/" + encodeURIComponent(domain), { authenticated: false });
 }
-export function requestAssociationAccess({ domain, email, role, message = "" }) {
-  return request("/access-requests", {method:"POST",authenticated:false,body:{domain,email,role,message}});
+export function requestAssociationAccess({ joinCode, email, role, message = "" }) {
+  return request("/access-requests", {method:"POST",authenticated:false,body:{joinCode,email,role,message}});
 }
 export function listAssociationAccessRequests() { return request("/access-requests"); }
 export function approveAssociationAccessRequest(id) {
@@ -162,4 +162,12 @@ export function completePasswordRecovery({ code, password }) {
 
 export function updateOrganizationProfile({ name, description }) {
   return request("/organization/profile", { method: "PATCH", body: { name, description } });
+}
+
+export function updateOrganizationLogo(logoDataUrl, onlyIfMissing = false) {
+  return request("/organization/logo", { method: "PATCH", body: { logoDataUrl, onlyIfMissing } });
+}
+
+export function updateAccountProfile(values) {
+  return request("/account/profile", { method: "PATCH", body: values });
 }
